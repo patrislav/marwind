@@ -37,7 +37,7 @@ func (ws *Workspace) AddWindow(xc *xgb.Conn, win xproto.Window) error {
 	}
 	var col *Column
 	if len(ws.columns) < 2 {
-		col = ws.createColumn()
+		col = ws.createColumn(false)
 	}
 	if col == nil {
 		col = ws.columns[len(ws.columns)-1]
@@ -60,7 +60,56 @@ func (ws *Workspace) DeleteWindow(win xproto.Window) error {
 }
 
 func (ws *Workspace) MoveWindow(win xproto.Window, dir MoveDirection) error {
-	// TODO: implement MoveWindow
+	frame := ws.findFrame(func(f *Frame) bool { return f.window == win })
+	if frame == nil {
+		return nil
+	}
+	switch dir {
+	case MoveLeft:
+		i := ws.findColumnIndex(func(c *Column) bool { return c == frame.col })
+		origCol := frame.col
+		origCol.DeleteFrame(frame)
+		if i == 0 {
+			col := ws.createColumn(true)
+			col.AddFrame(frame, nil)
+		} else {
+			col := ws.columns[i-1]
+			col.AddFrame(frame, nil)
+		}
+		if len(origCol.frames) == 0 {
+			ws.deleteColumn(origCol)
+		}
+	case MoveRight:
+		i := ws.findColumnIndex(func(c *Column) bool { return c == frame.col })
+		origCol := frame.col
+		origCol.DeleteFrame(frame)
+		if i == len(ws.columns)-1 {
+			col := ws.createColumn(false)
+			col.AddFrame(frame, nil)
+		} else {
+			col := ws.columns[i+1]
+			col.AddFrame(frame, nil)
+		}
+		if len(origCol.frames) == 0 {
+			ws.deleteColumn(origCol)
+		}
+	case MoveUp:
+		col := frame.col
+		i := col.findFrameIndex(func(f *Frame) bool { return f == frame })
+		if i > 0 {
+			other := col.frames[i-1]
+			col.frames[i-1] = frame
+			col.frames[i] = other
+		}
+	case MoveDown:
+		col := frame.col
+		i := col.findFrameIndex(func(f *Frame) bool { return f == frame })
+		if i < len(col.frames)-1 {
+			other := col.frames[i+1]
+			col.frames[i+1] = frame
+			col.frames[i] = other
+		}
+	}
 	return nil
 }
 
@@ -68,6 +117,9 @@ func (ws *Workspace) Columns() []*Column { return ws.columns }
 
 func (ws *Workspace) Rect() Rect {
 	r := ws.output.rect
+	if !ws.HasGaps() {
+		return r
+	}
 	return Rect{
 		X: r.X + ws.config.Gap,
 		Y: r.Y + ws.config.Gap,
@@ -76,11 +128,20 @@ func (ws *Workspace) Rect() Rect {
 	}
 }
 
+func (ws *Workspace) HasWindow(win xproto.Window) bool {
+	frame := ws.findFrame(func(f *Frame) bool { return f.window == win })
+	return frame != nil
+}
+
+func (ws *Workspace) HasGaps() bool {
+	return ws.countAllFrames() > 1
+}
+
 func (ws *Workspace) setOutput(output *Output) {
 	ws.output = output
 }
 
-func (ws *Workspace) createColumn() *Column {
+func (ws *Workspace) createColumn(start bool) *Column {
 	wsWidth := ws.Rect().W
 	origLen := len(ws.columns)
 	col := &Column{ws: ws, width: ws.Rect().W / uint32(origLen+1)}
@@ -98,7 +159,11 @@ func (ws *Workspace) createColumn() *Column {
 	} else {
 		col.width = wsWidth
 	}
-	ws.columns = append(ws.columns, col)
+	if start {
+		ws.columns = append([]*Column{col}, ws.columns...)
+	} else {
+		ws.columns = append(ws.columns, col)
+	}
 	return col
 }
 
@@ -133,4 +198,12 @@ func (ws *Workspace) findColumnIndex(predicate func(*Column) bool) int {
 		}
 	}
 	return -1
+}
+
+func (ws *Workspace) countAllFrames() int {
+	count := 0
+	for _, col := range ws.columns {
+		count += len(col.frames)
+	}
+	return count
 }

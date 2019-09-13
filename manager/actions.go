@@ -1,11 +1,13 @@
 package manager
 
 import (
+	"fmt"
 	"log"
 	"os/exec"
 	"time"
 
 	"github.com/BurntSushi/xgb/xproto"
+	"github.com/patrislav/marwind-wm/container"
 	"github.com/patrislav/marwind-wm/keysym"
 )
 
@@ -18,6 +20,8 @@ type Action struct {
 
 func initActions(m *Manager) []Action {
 	mod1 := xproto.ModMask1
+	shift := xproto.ModMaskShift
+	// shift := 0
 	actions := []Action{
 		{
 			sym:       keysym.XK_q,
@@ -38,11 +42,32 @@ func initActions(m *Manager) []Action {
 				return nil
 			},
 		},
+		{
+			sym:       keysym.XK_h,
+			modifiers: mod1 | shift,
+			act:       func() error { return handleMoveWindow(m, container.MoveLeft) },
+		},
+		{
+			sym:       keysym.XK_j,
+			modifiers: mod1 | shift,
+			act:       func() error { return handleMoveWindow(m, container.MoveDown) },
+		},
+		{
+			sym:       keysym.XK_k,
+			modifiers: mod1 | shift,
+			act:       func() error { return handleMoveWindow(m, container.MoveUp) },
+		},
+		{
+			sym:       keysym.XK_l,
+			modifiers: mod1 | shift,
+			act:       func() error { return handleMoveWindow(m, container.MoveRight) },
+		},
 	}
 	for i, syms := range m.keymap {
 		for _, sym := range syms {
 			for c := range actions {
 				if actions[c].sym == sym {
+					fmt.Println(actions[c])
 					actions[c].codes = append(actions[c].codes, xproto.Keycode(i))
 				}
 			}
@@ -52,7 +77,9 @@ func initActions(m *Manager) []Action {
 }
 
 func handleRemoveWindow(m *Manager) error {
-	log.Println("removing window", m.activeWin)
+	if !m.ws.HasWindow(m.activeWin) {
+		return nil
+	}
 	cookie := xproto.GetProperty(m.xc, false, m.activeWin, m.atoms.wmProtocols, xproto.GetPropertyTypeAny, 0, 64)
 	prop, err := cookie.Reply()
 	if err != nil {
@@ -64,7 +91,6 @@ func handleRemoveWindow(m *Manager) error {
 			switch xproto.Atom(uint32(v[0]) | uint32(v[1])<<8 | uint32(v[2])<<16 | uint32(v[3])<<24) {
 			case m.atoms.wmDeleteWindow:
 				t := time.Now().Unix()
-				log.Println("sending event to the window")
 				return xproto.SendEventChecked(
 					m.xc,
 					false,
@@ -90,4 +116,12 @@ func handleRemoveWindow(m *Manager) error {
 		return xproto.DestroyWindowChecked(m.xc, m.activeWin).Check()
 	}
 	return nil
+}
+
+func handleMoveWindow(m *Manager, dir container.MoveDirection) error {
+	err := m.ws.MoveWindow(m.activeWin, dir)
+	if err != nil {
+		return err
+	}
+	return m.renderWorkspace(m.ws)
 }
