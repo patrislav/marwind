@@ -116,10 +116,7 @@ func (ws *Workspace) MoveWindow(win xproto.Window, dir MoveDirection) error {
 func (ws *Workspace) Columns() []*Column { return ws.columns }
 
 func (ws *Workspace) Rect() Rect {
-	r := ws.output.rect
-	if !ws.HasGaps() {
-		return r
-	}
+	r := ws.FullRect()
 	return Rect{
 		X: r.X + ws.config.Gap,
 		Y: r.Y + ws.config.Gap,
@@ -128,13 +125,21 @@ func (ws *Workspace) Rect() Rect {
 	}
 }
 
+func (ws *Workspace) FullRect() Rect {
+	return ws.output.rect
+}
+
 func (ws *Workspace) HasWindow(win xproto.Window) bool {
 	frame := ws.findFrame(func(f *Frame) bool { return f.window == win })
 	return frame != nil
 }
 
-func (ws *Workspace) HasGaps() bool {
-	return ws.countAllFrames() > 1
+// GetOnlyFrame returns a pointer to the frame if there's only one in the workspace and nil otherwise
+func (ws *Workspace) GetOnlyFrame() *Frame {
+	if ws.countAllFrames() == 1 {
+		return ws.columns[0].frames[0]
+	}
+	return nil
 }
 
 func (ws *Workspace) setOutput(output *Output) {

@@ -7,9 +7,9 @@ import (
 
 func (m *Manager) renderWorkspace(ws *container.Workspace) error {
 	var err error
-	var gap uint32
-	if ws.HasGaps() {
-		gap = m.config.InnerGap
+	onlyFrame := ws.GetOnlyFrame()
+	if onlyFrame != nil {
+		return m.renderFrame(onlyFrame, ws.FullRect(), 0)
 	}
 	startX := ws.Rect().X
 	for _, col := range ws.Columns() {
@@ -19,7 +19,7 @@ func (m *Manager) renderWorkspace(ws *container.Workspace) error {
 			W: col.Width(),
 			H: ws.Rect().H,
 		}
-		err = m.renderColumn(col, rect, gap)
+		err = m.renderColumn(col, rect, m.config.InnerGap)
 		startX += col.Width()
 	}
 	return err
