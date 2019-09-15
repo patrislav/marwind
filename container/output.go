@@ -97,3 +97,13 @@ func (o *Output) DockHeight(area DockArea) uint32 {
 	}
 	return height
 }
+
+func (o *Output) FindFrame(predicate func(*Frame) bool) *Frame {
+	for _, ws := range o.workspaces {
+		f := ws.findFrame(predicate)
+		if f != nil {
+			return f
+		}
+	}
+	return nil
+}

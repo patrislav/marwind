@@ -6,7 +6,6 @@ import (
 	"log"
 	"time"
 
-	"github.com/BurntSushi/xgb/xinerama"
 	"github.com/BurntSushi/xgb/xproto"
 	"github.com/patrislav/marwind-wm/container"
 	"github.com/patrislav/marwind-wm/keysym"
@@ -15,7 +14,6 @@ import (
 
 // Manager is an instance of the WM
 type Manager struct {
-	xroot     xproto.ScreenInfo
 	keymap    keysym.Keymap
 	outputs   []*container.Output
 	activeWin xproto.Window
@@ -34,7 +32,7 @@ type Manager struct {
 // New initializes a Manager and creates an X11 connection
 func New(config Config) (*Manager, error) {
 	m := &Manager{config: config}
-	err := x11.InitConnection()
+	err := x11.CreateConnection()
 	if err != nil {
 		return nil, err
 	}
@@ -46,18 +44,10 @@ func New(config Config) (*Manager, error) {
 
 // Init initializes the window manager
 func (m *Manager) Init() error {
-	if err := xinerama.Init(x11.X); err != nil {
+	err := x11.InitConnection()
+	if err != nil {
 		return err
 	}
-
-	conninfo := xproto.Setup(x11.X)
-	if conninfo == nil {
-		return errors.New("could not parse X connection info")
-	}
-	if len(conninfo.Roots) != 1 {
-		return errors.New("wrong number of roots, did xinerama initialize properly?")
-	}
-	m.xroot = conninfo.Roots[0]
 
 	if err := m.becomeWM(); err != nil {
 		if _, ok := err.(xproto.AccessError); ok {
@@ -76,7 +66,11 @@ func (m *Manager) Init() error {
 		log.Fatal(err)
 	}
 
-	output := container.NewOutput(container.Rect{0, 0, 1366, 768})
+	output := container.NewOutput(container.Rect{
+		X: 0, Y: 0,
+		W: uint32(x11.Screen.WidthInPixels),
+		H: uint32(x11.Screen.HeightInPixels),
+	})
 	ws := container.NewWorkspace(container.WorkspaceConfig{Gap: m.config.OuterGap})
 	output.AddWorkspace(ws)
 
@@ -151,7 +145,7 @@ func (m *Manager) becomeWM() error {
 			xproto.EventMaskStructureNotify |
 			xproto.EventMaskSubstructureRedirect,
 	}
-	return xproto.ChangeWindowAttributesChecked(x11.X, m.xroot.Root, xproto.CwEventMask, evtMask).Check()
+	return xproto.ChangeWindowAttributesChecked(x11.X, x11.Screen.Root, xproto.CwEventMask, evtMask).Check()
 }
 
 func (m *Manager) addWindow(win xproto.Window) error {
@@ -184,7 +178,7 @@ func (m *Manager) deleteWindow(win xproto.Window) error {
 }
 
 func (m *Manager) gatherWindows() error {
-	tree, err := xproto.QueryTree(x11.X, m.xroot.Root).Reply()
+	tree, err := xproto.QueryTree(x11.X, x11.Screen.Root).Reply()
 	if err != nil {
 		return err
 	}
@@ -246,13 +240,27 @@ func (m *Manager) takeFocusProp(prop *xproto.GetPropertyReply, win xproto.Window
 	return false
 }
 
+func (m *Manager) warpPointerToFrame(frame *container.Frame) error {
+	return x11.WarpPointer(frame.Rect.X+frame.Rect.W/2, frame.Rect.Y+frame.Rect.H/2)
+}
+
+func (m *Manager) findFrame(predicate func(*container.Frame) bool) *container.Frame {
+	for _, output := range m.outputs {
+		f := output.FindFrame(predicate)
+		if f != nil {
+			return f
+		}
+	}
+	return nil
+}
+
 func (m *Manager) grabKeys() error {
 	for _, action := range m.actions {
 		for _, code := range action.codes {
 			cookie := xproto.GrabKeyChecked(
 				x11.X,
 				false,
-				m.xroot.Root,
+				x11.Screen.Root,
 				uint16(action.modifiers),
 				code,
 				xproto.GrabModeAsync,

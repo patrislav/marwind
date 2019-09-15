@@ -18,6 +18,7 @@ type Frame struct {
 	height uint32
 	window xproto.Window
 	typ    WinType
+	Rect   Rect
 }
 
 func ManageWindow(win xproto.Window) (*Frame, error) {

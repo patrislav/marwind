@@ -33,7 +33,7 @@ func (m *Manager) renderDock(o *container.Output, area container.DockArea) error
 			W: o.Rect().W,
 			H: f.Height(),
 		}
-		err = m.renderFrame(f, rect, 0)
+		err = m.renderFrame(f, rect)
 		y += rect.H
 	}
 	return err
@@ -43,7 +43,7 @@ func (m *Manager) renderWorkspace(ws *container.Workspace) error {
 	var err error
 	onlyFrame := ws.GetOnlyFrame()
 	if onlyFrame != nil {
-		return m.renderFrame(onlyFrame, ws.FullRect(), 0)
+		return m.renderFrame(onlyFrame, ws.FullRect())
 	}
 	startX := ws.Rect().X
 	for _, col := range ws.Columns() {
@@ -64,24 +64,25 @@ func (m *Manager) renderColumn(col *container.Column, rect container.Rect, gap u
 	startY := rect.Y
 	for _, frame := range col.Frames() {
 		rect := container.Rect{
-			X: rect.X,
-			Y: startY,
-			W: rect.W,
-			H: frame.Height(),
+			X: rect.X + gap,
+			Y: startY + gap,
+			W: rect.W - gap*2,
+			H: frame.Height() - gap*2,
 		}
-		err = m.renderFrame(frame, rect, gap)
+		err = m.renderFrame(frame, rect)
 		startY += frame.Height()
 	}
 	return err
 }
 
-func (m *Manager) renderFrame(frame *container.Frame, rect container.Rect, gap uint32) error {
+func (m *Manager) renderFrame(frame *container.Frame, rect container.Rect) error {
+	frame.Rect = rect
 	mask := uint16(xproto.ConfigWindowX | xproto.ConfigWindowY | xproto.ConfigWindowWidth | xproto.ConfigWindowHeight)
 	values := []uint32{
-		rect.X + gap,
-		rect.Y + gap,
-		rect.W - gap*2,
-		rect.H - gap*2,
+		rect.X,
+		rect.Y,
+		rect.W,
+		rect.H,
 	}
 	return xproto.ConfigureWindowChecked(x11.X, frame.Window(), mask, values).Check()
 }

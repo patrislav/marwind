@@ -1,6 +1,7 @@
 package manager
 
 import (
+	"fmt"
 	"log"
 	"os/exec"
 	"time"
@@ -121,5 +122,13 @@ func handleMoveWindow(m *Manager, dir container.MoveDirection) error {
 	if err != nil {
 		return err
 	}
-	return m.renderWorkspace(m.ws)
+	err = m.renderWorkspace(m.ws)
+	if err != nil {
+		return err
+	}
+	frame := m.findFrame(func(f *container.Frame) bool { return f.Window() == m.activeWin })
+	if frame == nil {
+		return fmt.Errorf("could not find frame with window %v", m.activeWin)
+	}
+	return m.warpPointerToFrame(frame)
 }
