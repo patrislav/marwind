@@ -18,6 +18,7 @@ type Frame struct {
 	height uint32
 	window xproto.Window
 	typ    WinType
+	mapped bool
 	Rect   Rect
 }
 
@@ -38,6 +39,24 @@ func ManageWindow(win xproto.Window) (*Frame, error) {
 func (f *Frame) Height() uint32        { return f.height }
 func (f *Frame) Window() xproto.Window { return f.window }
 func (f *Frame) Type() WinType         { return f.typ }
+
+func (f *Frame) Map() error {
+	err := xproto.MapWindowChecked(x11.X, f.window).Check()
+	if err != nil {
+		return err
+	}
+	f.mapped = true
+	return nil
+}
+
+func (f *Frame) Unmap() error {
+	err := xproto.UnmapWindowChecked(x11.X, f.window).Check()
+	if err != nil {
+		return err
+	}
+	f.mapped = false
+	return nil
+}
 
 func getWindowType(win xproto.Window) WinType {
 	typeAtom := x11.Atom("_NET_WM_WINDOW_TYPE")

@@ -20,16 +20,18 @@ type WorkspaceConfig struct {
 }
 
 type Workspace struct {
+	ID      uint8
+	Name    string
 	output  *Output
 	columns []*Column
 	config  WorkspaceConfig
 }
 
-func NewWorkspace(config WorkspaceConfig) *Workspace {
-	return &Workspace{config: config}
+func NewWorkspace(id uint8, config WorkspaceConfig) *Workspace {
+	return &Workspace{config: config, ID: id}
 }
 
-func (ws *Workspace) AddFrame(frame *Frame) {
+func (ws *Workspace) AddFrame(frame *Frame) error {
 	var col *Column
 	if len(ws.columns) < 2 {
 		col = ws.createColumn(false)
@@ -38,6 +40,10 @@ func (ws *Workspace) AddFrame(frame *Frame) {
 		col = ws.columns[len(ws.columns)-1]
 	}
 	col.AddFrame(frame, nil)
+	if ws.output.currentWs == ws {
+		return frame.Map()
+	}
+	return nil
 }
 
 func (ws *Workspace) DeleteWindow(win xproto.Window) error {
@@ -142,6 +148,9 @@ func (ws *Workspace) UpdateTiling() {
 	}
 }
 
+func (ws *Workspace) IsVisible() bool { return ws.output.currentWs == ws }
+func (ws *Workspace) Output() *Output { return ws.output }
+
 func (ws *Workspace) setOutput(output *Output) {
 	ws.output = output
 }
@@ -211,4 +220,24 @@ func (ws *Workspace) countAllFrames() int {
 		count += len(col.frames)
 	}
 	return count
+}
+
+func (ws *Workspace) hide() error {
+	var err error
+	for _, col := range ws.columns {
+		for _, f := range col.frames {
+			err = f.Unmap()
+		}
+	}
+	return err
+}
+
+func (ws *Workspace) show() error {
+	var err error
+	for _, col := range ws.columns {
+		for _, f := range col.frames {
+			err = f.Map()
+		}
+	}
+	return err
 }

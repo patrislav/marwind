@@ -12,6 +12,8 @@ import (
 	"github.com/patrislav/marwind-wm/x11"
 )
 
+const maxWorkspaces = 10
+
 // Manager is an instance of the WM
 type Manager struct {
 	keymap    keysym.Keymap
@@ -22,11 +24,9 @@ type Manager struct {
 		wmDeleteWindow xproto.Atom
 		wmTakeFocus    xproto.Atom
 	}
-	actions []Action
-	config  Config
-
-	// Temporary property
-	ws *container.Workspace
+	actions    []*Action
+	config     Config
+	workspaces [maxWorkspaces]*container.Workspace
 }
 
 // New initializes a Manager and creates an X11 connection
@@ -71,11 +71,13 @@ func (m *Manager) Init() error {
 		W: uint32(x11.Screen.WidthInPixels),
 		H: uint32(x11.Screen.HeightInPixels),
 	})
-	ws := container.NewWorkspace(container.WorkspaceConfig{Gap: m.config.OuterGap})
-	output.AddWorkspace(ws)
+
+	for i := 0; i < maxWorkspaces; i++ {
+		m.workspaces[i] = container.NewWorkspace(uint8(i), container.WorkspaceConfig{Gap: m.config.OuterGap})
+	}
+	output.AddWorkspace(m.workspaces[0])
 
 	m.outputs = append(m.outputs, output)
-	m.ws = ws
 
 	m.gatherWindows()
 
@@ -121,7 +123,6 @@ func (m *Manager) Run() error {
 
 		case xproto.MapRequestEvent:
 			if attrib, err := xproto.GetWindowAttributes(x11.X, e.Window).Reply(); err != nil || !attrib.OverrideRedirect {
-				xproto.MapWindowChecked(x11.X, e.Window)
 				if err := m.addWindow(e.Window); err != nil {
 					log.Println("Failed to manage a window:", err)
 				}
@@ -155,13 +156,13 @@ func (m *Manager) addWindow(win xproto.Window) error {
 	}
 	switch frame.Type() {
 	case container.WinTypeNormal:
-		m.ws.AddFrame(frame)
-		m.renderWorkspace(m.ws)
+		ws := m.outputs[0].CurrentWorkspace()
+		ws.AddFrame(frame)
+		m.renderWorkspace(ws)
 		m.setFocus(win, xproto.Timestamp(time.Now().Unix()))
 	case container.WinTypeDock:
 		m.outputs[0].AddDock(frame)
 		m.renderOutput(m.outputs[0])
-		m.renderWorkspace(m.ws)
 	}
 	return nil
 }
@@ -170,7 +171,6 @@ func (m *Manager) deleteWindow(win xproto.Window) error {
 	for _, output := range m.outputs {
 		if output.DeleteWindow(win) {
 			m.renderOutput(output)
-			m.renderWorkspace(m.ws)
 			return nil
 		}
 	}
@@ -217,6 +217,11 @@ func (m *Manager) setFocus(win xproto.Window, time xproto.Timestamp) error {
 		return err
 	}
 	return x11.SetActiveWindow(win)
+}
+
+func (m *Manager) removeFocus() error {
+	m.activeWin = 0
+	return x11.SetActiveWindow(0)
 }
 
 func (m *Manager) takeFocusProp(prop *xproto.GetPropertyReply, win xproto.Window, time xproto.Timestamp) bool {
@@ -279,4 +284,30 @@ func (m *Manager) grabKeys() error {
 		}
 	}
 	return nil
+}
+
+func (m *Manager) switchWorkspace(output *container.Output, id uint8) error {
+	var nextWs *container.Workspace
+	for _, ws := range m.workspaces {
+		if ws.ID == id {
+			nextWs = ws
+			break
+		}
+	}
+	if nextWs == nil {
+		return fmt.Errorf("no workspace with ID %d", id)
+	}
+	switch {
+	case nextWs.Output() == nil:
+		err := output.AddWorkspace(nextWs)
+		if err != nil {
+			return err
+		}
+	case nextWs.Output() != output:
+		return fmt.Errorf("multiple outputs not supported yet")
+	}
+	if err := m.removeFocus(); err != nil {
+		return err
+	}
+	return output.SwitchWorkspace(nextWs)
 }

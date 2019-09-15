@@ -14,6 +14,9 @@ func (m *Manager) renderOutput(o *container.Output) error {
 	if e := m.renderDock(o, container.DockAreaBottom); e != nil {
 		err = e
 	}
+	if e := m.renderWorkspace(o.CurrentWorkspace()); e != nil {
+		err = e
+	}
 	return err
 }
 

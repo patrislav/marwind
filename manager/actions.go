@@ -19,10 +19,10 @@ type Action struct {
 	act       func() error
 }
 
-func initActions(m *Manager) []Action {
+func initActions(m *Manager) []*Action {
 	mod1 := xproto.ModMask1
 	shift := xproto.ModMaskShift
-	actions := []Action{
+	actions := []*Action{
 		{
 			sym:       keysym.XK_q,
 			modifiers: mod1,
@@ -63,6 +63,7 @@ func initActions(m *Manager) []Action {
 			act:       func() error { return handleMoveWindow(m, container.MoveRight) },
 		},
 	}
+	actions = appendWorkspaceActions(m, actions, mod1)
 	for i, syms := range m.keymap {
 		for _, sym := range syms {
 			for c := range actions {
@@ -75,8 +76,29 @@ func initActions(m *Manager) []Action {
 	return actions
 }
 
+func appendWorkspaceActions(m *Manager, actions []*Action, switchMod int) []*Action {
+	for i := 0; i < maxWorkspaces; i++ {
+		var sym xproto.Keysym
+		if i == 9 {
+			sym = keysym.XK_0
+		} else {
+			sym = xproto.Keysym(keysym.XK_1 + i)
+		}
+		wsID := i
+		actions = append(actions, &Action{
+			sym:       sym,
+			modifiers: switchMod,
+			act: func() error {
+				fmt.Println("switching", wsID)
+				return m.switchWorkspace(m.outputs[0], uint8(wsID))
+			},
+		})
+	}
+	return actions
+}
+
 func handleRemoveWindow(m *Manager) error {
-	if !m.ws.HasWindow(m.activeWin) {
+	if !m.outputs[0].CurrentWorkspace().HasWindow(m.activeWin) {
 		return nil
 	}
 	cookie := xproto.GetProperty(x11.X, false, m.activeWin, m.atoms.wmProtocols, xproto.GetPropertyTypeAny, 0, 64)
@@ -118,11 +140,12 @@ func handleRemoveWindow(m *Manager) error {
 }
 
 func handleMoveWindow(m *Manager, dir container.MoveDirection) error {
-	err := m.ws.MoveWindow(m.activeWin, dir)
+	ws := m.outputs[0].CurrentWorkspace()
+	err := ws.MoveWindow(m.activeWin, dir)
 	if err != nil {
 		return err
 	}
-	err = m.renderWorkspace(m.ws)
+	err = m.renderWorkspace(ws)
 	if err != nil {
 		return err
 	}

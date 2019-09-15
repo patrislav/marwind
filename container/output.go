@@ -27,10 +27,37 @@ func NewOutput(rect Rect) *Output {
 
 func (o *Output) Rect() Rect                        { return o.rect }
 func (o *Output) DockFrames(area DockArea) []*Frame { return o.dockAreas[area] }
+func (o *Output) CurrentWorkspace() *Workspace      { return o.currentWs }
+func (o *Output) Workspaces() []*Workspace          { return o.workspaces }
 
-func (o *Output) AddWorkspace(ws *Workspace) {
+func (o *Output) SwitchWorkspace(next *Workspace) error {
+	if next == o.currentWs {
+		return nil
+	}
+	check := o.FindWorkspace(func(ws *Workspace) bool { return ws == next })
+	if check == nil {
+		return fmt.Errorf("workspace is not a part of this output")
+	}
+	err := o.currentWs.hide()
+	if err != nil {
+		return err
+	}
+	err = next.show()
+	if err != nil {
+		return err
+	}
+	o.currentWs = next
+	return nil
+}
+
+func (o *Output) AddWorkspace(ws *Workspace) error {
 	ws.setOutput(o)
 	o.workspaces = append(o.workspaces, ws)
+	if o.currentWs == nil {
+		o.currentWs = ws
+		return ws.show()
+	}
+	return nil
 }
 
 func (o *Output) AddDock(f *Frame) error {
@@ -38,7 +65,6 @@ func (o *Output) AddDock(f *Frame) error {
 	if err != nil {
 		return err
 	}
-	fmt.Println("Struts", struts)
 	var area DockArea
 	switch {
 	case struts.Top > struts.Bottom:
@@ -52,7 +78,7 @@ func (o *Output) AddDock(f *Frame) error {
 	}
 	o.dockAreas[area] = append(o.dockAreas[area], f)
 	o.updateTiling()
-	return nil
+	return f.Map()
 }
 
 func (o *Output) DeleteWindow(win xproto.Window) bool {
@@ -103,6 +129,15 @@ func (o *Output) FindFrame(predicate func(*Frame) bool) *Frame {
 		f := ws.findFrame(predicate)
 		if f != nil {
 			return f
+		}
+	}
+	return nil
+}
+
+func (o *Output) FindWorkspace(predicate func(*Workspace) bool) *Workspace {
+	for _, ws := range o.workspaces {
+		if predicate(ws) {
+			return ws
 		}
 	}
 	return nil
