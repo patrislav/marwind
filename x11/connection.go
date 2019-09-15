@@ -35,5 +35,10 @@ func InitConnection() error {
 		return errors.New("wrong number of roots, did xinerama initialize properly?")
 	}
 	Screen = conninfo.Roots[0]
+
+	err := initDesktop()
+	if err != nil {
+		return err
+	}
 	return nil
 }
