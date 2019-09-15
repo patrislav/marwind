@@ -1,7 +1,6 @@
 package manager
 
 import (
-	"fmt"
 	"log"
 	"os/exec"
 	"time"
@@ -9,6 +8,7 @@ import (
 	"github.com/BurntSushi/xgb/xproto"
 	"github.com/patrislav/marwind-wm/container"
 	"github.com/patrislav/marwind-wm/keysym"
+	"github.com/patrislav/marwind-wm/x11"
 )
 
 type Action struct {
@@ -21,7 +21,6 @@ type Action struct {
 func initActions(m *Manager) []Action {
 	mod1 := xproto.ModMask1
 	shift := xproto.ModMaskShift
-	// shift := 0
 	actions := []Action{
 		{
 			sym:       keysym.XK_q,
@@ -67,7 +66,6 @@ func initActions(m *Manager) []Action {
 		for _, sym := range syms {
 			for c := range actions {
 				if actions[c].sym == sym {
-					fmt.Println(actions[c])
 					actions[c].codes = append(actions[c].codes, xproto.Keycode(i))
 				}
 			}
@@ -80,7 +78,7 @@ func handleRemoveWindow(m *Manager) error {
 	if !m.ws.HasWindow(m.activeWin) {
 		return nil
 	}
-	cookie := xproto.GetProperty(m.xc, false, m.activeWin, m.atoms.wmProtocols, xproto.GetPropertyTypeAny, 0, 64)
+	cookie := xproto.GetProperty(x11.X, false, m.activeWin, m.atoms.wmProtocols, xproto.GetPropertyTypeAny, 0, 64)
 	prop, err := cookie.Reply()
 	if err != nil {
 		log.Println("error when getting property", err)
@@ -92,7 +90,7 @@ func handleRemoveWindow(m *Manager) error {
 			case m.atoms.wmDeleteWindow:
 				t := time.Now().Unix()
 				return xproto.SendEventChecked(
-					m.xc,
+					x11.X,
 					false,
 					m.activeWin,
 					xproto.EventMaskNoEvent,
@@ -113,7 +111,7 @@ func handleRemoveWindow(m *Manager) error {
 	}
 	// There were no properties which means window doesn't follow ICCCM. Just destroy it
 	if m.activeWin != 0 {
-		return xproto.DestroyWindowChecked(m.xc, m.activeWin).Check()
+		return xproto.DestroyWindowChecked(x11.X, m.activeWin).Check()
 	}
 	return nil
 }

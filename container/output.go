@@ -3,7 +3,6 @@ package container
 import (
 	"fmt"
 
-	"github.com/BurntSushi/xgb"
 	"github.com/BurntSushi/xgb/xproto"
 	"github.com/patrislav/marwind-wm/x11"
 )
@@ -34,8 +33,8 @@ func (o *Output) AddWorkspace(ws *Workspace) {
 	o.workspaces = append(o.workspaces, ws)
 }
 
-func (o *Output) AddDock(xc *xgb.Conn, f *Frame) error {
-	struts, err := x11.GetWindowStruts(xc, f.window)
+func (o *Output) AddDock(f *Frame) error {
+	struts, err := x11.GetWindowStruts(f.window)
 	if err != nil {
 		return err
 	}

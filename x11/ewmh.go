@@ -3,7 +3,6 @@ package x11
 import (
 	"fmt"
 
-	"github.com/BurntSushi/xgb"
 	"github.com/BurntSushi/xgb/xproto"
 )
 
@@ -14,11 +13,11 @@ type Struts struct {
 }
 
 // GetWindowStruts returns the values of the window's _NET_WM_STRUT(_PARTIAL) property
-func GetWindowStruts(xc *xgb.Conn, win xproto.Window) (*Struts, error) {
+func GetWindowStruts(win xproto.Window) (*Struts, error) {
 	// TODO: support _NET_WM_STRUT_PARTIAL as well
 	propName := "_NET_WM_STRUT"
-	atom := Atom(xc, propName)
-	prop, err := xproto.GetProperty(xc, false, win, atom, xproto.AtomCardinal, 2, 32).Reply()
+	atom := Atom(propName)
+	prop, err := xproto.GetProperty(X, false, win, atom, xproto.AtomCardinal, 2, 32).Reply()
 	if err != nil {
 		return nil, err
 	}

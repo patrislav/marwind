@@ -1,7 +1,6 @@
 package container
 
 import (
-	"github.com/BurntSushi/xgb"
 	"github.com/BurntSushi/xgb/xproto"
 	"github.com/patrislav/marwind-wm/x11"
 )
@@ -21,14 +20,14 @@ type Frame struct {
 	typ    WinType
 }
 
-func ManageWindow(xc *xgb.Conn, win xproto.Window) (*Frame, error) {
-	typ := getWindowType(xc, win)
-	cfgCookie := xproto.ConfigureWindowChecked(xc, win, xproto.ConfigWindowBorderWidth, []uint32{0})
+func ManageWindow(win xproto.Window) (*Frame, error) {
+	typ := getWindowType(win)
+	cfgCookie := xproto.ConfigureWindowChecked(x11.X, win, xproto.ConfigWindowBorderWidth, []uint32{0})
 	if err := cfgCookie.Check(); err != nil {
 		return nil, err
 	}
 	evtMask := []uint32{xproto.EventMaskStructureNotify | xproto.EventMaskEnterWindow}
-	changeCookie := xproto.ChangeWindowAttributesChecked(xc, win, xproto.CwEventMask, evtMask)
+	changeCookie := xproto.ChangeWindowAttributesChecked(x11.X, win, xproto.CwEventMask, evtMask)
 	if err := changeCookie.Check(); err != nil {
 		return nil, err
 	}
@@ -39,11 +38,11 @@ func (f *Frame) Height() uint32        { return f.height }
 func (f *Frame) Window() xproto.Window { return f.window }
 func (f *Frame) Type() WinType         { return f.typ }
 
-func getWindowType(xc *xgb.Conn, win xproto.Window) WinType {
-	typeAtom := x11.Atom(xc, "_NET_WM_WINDOW_TYPE")
-	dockTypeAtom := x11.Atom(xc, "_NET_WM_WINDOW_TYPE_DOCK")
-	normalTypeAtom := x11.Atom(xc, "_NET_WM_WINDOW_TYPE_NORMAL")
-	prop, err := xproto.GetProperty(xc, false, win, typeAtom, xproto.GetPropertyTypeAny, 0, 64).Reply()
+func getWindowType(win xproto.Window) WinType {
+	typeAtom := x11.Atom("_NET_WM_WINDOW_TYPE")
+	dockTypeAtom := x11.Atom("_NET_WM_WINDOW_TYPE_DOCK")
+	normalTypeAtom := x11.Atom("_NET_WM_WINDOW_TYPE_NORMAL")
+	prop, err := xproto.GetProperty(x11.X, false, win, typeAtom, xproto.GetPropertyTypeAny, 0, 64).Reply()
 	if err != nil {
 		return WinTypeUnknown
 	}

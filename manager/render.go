@@ -3,6 +3,7 @@ package manager
 import (
 	"github.com/BurntSushi/xgb/xproto"
 	"github.com/patrislav/marwind-wm/container"
+	"github.com/patrislav/marwind-wm/x11"
 )
 
 func (m *Manager) renderOutput(o *container.Output) error {
@@ -82,5 +83,5 @@ func (m *Manager) renderFrame(frame *container.Frame, rect container.Rect, gap u
 		rect.W - gap*2,
 		rect.H - gap*2,
 	}
-	return xproto.ConfigureWindowChecked(m.xc, frame.Window(), mask, values).Check()
+	return xproto.ConfigureWindowChecked(x11.X, frame.Window(), mask, values).Check()
 }
