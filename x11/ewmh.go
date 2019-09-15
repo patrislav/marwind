@@ -38,3 +38,15 @@ func GetWindowStruts(win xproto.Window) (*Struts, error) {
 		Bottom: values[3],
 	}, nil
 }
+
+func SetActiveWindow(win xproto.Window) error {
+	return changeProp32(Screen.Root, "_NET_ACTIVE_WINDOW", xproto.AtomWindow, uint32(win))
+}
+
+func setHints() error {
+	atoms := make([]uint32, len(ewmhSupported))
+	for i, s := range ewmhSupported {
+		atoms[i] = uint32(Atom(s))
+	}
+	return changeProp32(Screen.Root, "_NET_SUPPORTED", xproto.AtomAtom, atoms...)
+}

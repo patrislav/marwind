@@ -36,7 +36,11 @@ func InitConnection() error {
 	}
 	Screen = conninfo.Roots[0]
 
-	err := initDesktop()
+	err := setHints()
+	if err != nil {
+		return err
+	}
+	err = initDesktop()
 	if err != nil {
 		return err
 	}

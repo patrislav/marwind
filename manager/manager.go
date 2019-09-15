@@ -202,14 +202,21 @@ func (m *Manager) handleKeyPressEvent(e xproto.KeyPressEvent) error {
 }
 
 func (m *Manager) setFocus(win xproto.Window, time xproto.Timestamp) error {
+	frame := m.findFrame(func(f *container.Frame) bool { return f.Window() == win })
+	if frame == nil {
+		return nil
+	}
 	m.activeWin = win
 	cookie := xproto.GetProperty(x11.X, false, win, m.atoms.wmProtocols, xproto.GetPropertyTypeAny, 0, 64)
 	prop, err := cookie.Reply()
 	if err == nil && m.takeFocusProp(prop, win, time) {
-		return nil
+		return x11.SetActiveWindow(win)
 	}
-	_, err = xproto.SetInputFocusChecked(x11.X, xproto.InputFocusPointerRoot, win, time).Reply()
-	return err
+	err = xproto.SetInputFocusChecked(x11.X, xproto.InputFocusPointerRoot, win, time).Check()
+	if err != nil {
+		return err
+	}
+	return x11.SetActiveWindow(win)
 }
 
 func (m *Manager) takeFocusProp(prop *xproto.GetPropertyReply, win xproto.Window, time xproto.Timestamp) bool {
