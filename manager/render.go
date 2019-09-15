@@ -5,6 +5,39 @@ import (
 	"github.com/patrislav/marwind-wm/container"
 )
 
+func (m *Manager) renderOutput(o *container.Output) error {
+	var err error
+	if e := m.renderDock(o, container.DockAreaTop); e != nil {
+		err = e
+	}
+	if e := m.renderDock(o, container.DockAreaBottom); e != nil {
+		err = e
+	}
+	return err
+}
+
+func (m *Manager) renderDock(o *container.Output, area container.DockArea) error {
+	var err error
+	var y uint32
+	switch area {
+	case container.DockAreaTop:
+		y = o.Rect().Y
+	case container.DockAreaBottom:
+		y = o.Rect().H - o.DockHeight(area)
+	}
+	for _, f := range o.DockFrames(area) {
+		rect := container.Rect{
+			X: o.Rect().X,
+			Y: y,
+			W: o.Rect().W,
+			H: f.Height(),
+		}
+		err = m.renderFrame(f, rect, 0)
+		y += rect.H
+	}
+	return err
+}
+
 func (m *Manager) renderWorkspace(ws *container.Workspace) error {
 	var err error
 	onlyFrame := ws.GetOnlyFrame()

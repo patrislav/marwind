@@ -31,10 +31,14 @@ func (c *Column) DeleteFrame(frame *Frame) {
 	if idx < 0 {
 		return
 	}
-	wsHeight := c.ws.Rect().H
-	// TODO: assign the heights proportional to the original height/totalHeight ratio
 	// origLen := len(c.frames)
 	c.frames = append(c.frames[:idx], c.frames[idx+1:]...)
+	c.UpdateTiling()
+}
+
+func (c *Column) UpdateTiling() {
+	wsHeight := c.ws.Rect().H
+	// TODO: assign the heights proportional to the original height/totalHeight ratio
 	for _, f := range c.frames {
 		f.height = wsHeight / uint32(len(c.frames))
 	}

@@ -3,7 +3,6 @@ package container
 import (
 	"fmt"
 
-	"github.com/BurntSushi/xgb"
 	"github.com/BurntSushi/xgb/xproto"
 )
 
@@ -30,11 +29,7 @@ func NewWorkspace(config WorkspaceConfig) *Workspace {
 	return &Workspace{config: config}
 }
 
-func (ws *Workspace) AddWindow(xc *xgb.Conn, win xproto.Window) error {
-	frame, err := ManageWindow(xc, win)
-	if err != nil {
-		return err
-	}
+func (ws *Workspace) AddFrame(frame *Frame) {
 	var col *Column
 	if len(ws.columns) < 2 {
 		col = ws.createColumn(false)
@@ -43,7 +38,6 @@ func (ws *Workspace) AddWindow(xc *xgb.Conn, win xproto.Window) error {
 		col = ws.columns[len(ws.columns)-1]
 	}
 	col.AddFrame(frame, nil)
-	return nil
 }
 
 func (ws *Workspace) DeleteWindow(win xproto.Window) error {
@@ -126,7 +120,7 @@ func (ws *Workspace) Rect() Rect {
 }
 
 func (ws *Workspace) FullRect() Rect {
-	return ws.output.rect
+	return ws.output.workspaceRect()
 }
 
 func (ws *Workspace) HasWindow(win xproto.Window) bool {
@@ -140,6 +134,12 @@ func (ws *Workspace) GetOnlyFrame() *Frame {
 		return ws.columns[0].frames[0]
 	}
 	return nil
+}
+
+func (ws *Workspace) UpdateTiling() {
+	for _, col := range ws.columns {
+		col.UpdateTiling()
+	}
 }
 
 func (ws *Workspace) setOutput(output *Output) {

@@ -11,6 +11,7 @@ import (
 	"github.com/BurntSushi/xgb/xproto"
 	"github.com/patrislav/marwind-wm/container"
 	"github.com/patrislav/marwind-wm/keysym"
+	"github.com/patrislav/marwind-wm/x11"
 )
 
 // Manager is an instance of the WM
@@ -40,11 +41,9 @@ func New(config Config) (*Manager, error) {
 		return nil, err
 	}
 	m.xc = xc
-
-	m.atoms.wmProtocols = m.getAtom("WM_PROTOCOLS")
-	m.atoms.wmDeleteWindow = m.getAtom("WM_DELETE_WINDOW")
-	m.atoms.wmTakeFocus = m.getAtom("WM_TAKE_FOCUS")
-
+	m.atoms.wmProtocols = x11.Atom(m.xc, "WM_PROTOCOLS")
+	m.atoms.wmDeleteWindow = x11.Atom(m.xc, "WM_DELETE_WINDOW")
+	m.atoms.wmTakeFocus = x11.Atom(m.xc, "WM_TAKE_FOCUS")
 	return m, nil
 }
 
@@ -127,20 +126,14 @@ func (m *Manager) Run() error {
 			xproto.SendEventChecked(m.xc, false, e.Window, xproto.EventMaskStructureNotify, string(ev.Bytes()))
 
 		case xproto.DestroyNotifyEvent:
-			fmt.Println("DestroyNotifyEvent")
-			m.ws.DeleteWindow(e.Window)
-			m.renderWorkspace(m.ws)
+			m.deleteWindow(e.Window)
 
 		case xproto.MapRequestEvent:
 			if attrib, err := xproto.GetWindowAttributes(m.xc, e.Window).Reply(); err != nil || !attrib.OverrideRedirect {
 				xproto.MapWindowChecked(m.xc, e.Window)
-				err := m.ws.AddWindow(m.xc, e.Window)
-				if err != nil {
-					log.Println("Failed to create a window:", err)
-				} else {
-					m.renderWorkspace(m.ws)
+				if err := m.addWindow(e.Window); err != nil {
+					log.Println("Failed to manage a window:", err)
 				}
-				m.setFocus(e.Window, xproto.Timestamp(time.Now().Unix()))
 			}
 
 		case xproto.EnterNotifyEvent:
@@ -164,6 +157,35 @@ func (m *Manager) becomeWM() error {
 	return xproto.ChangeWindowAttributesChecked(m.xc, m.xroot.Root, xproto.CwEventMask, evtMask).Check()
 }
 
+func (m *Manager) addWindow(win xproto.Window) error {
+	frame, err := container.ManageWindow(m.xc, win)
+	if err != nil {
+		return err
+	}
+	switch frame.Type() {
+	case container.WinTypeNormal:
+		m.ws.AddFrame(frame)
+		m.renderWorkspace(m.ws)
+		m.setFocus(win, xproto.Timestamp(time.Now().Unix()))
+	case container.WinTypeDock:
+		m.outputs[0].AddDock(m.xc, frame)
+		m.renderOutput(m.outputs[0])
+		m.renderWorkspace(m.ws)
+	}
+	return nil
+}
+
+func (m *Manager) deleteWindow(win xproto.Window) error {
+	for _, output := range m.outputs {
+		if output.DeleteWindow(win) {
+			m.renderOutput(output)
+			m.renderWorkspace(m.ws)
+			return nil
+		}
+	}
+	return fmt.Errorf("could not find window to delete: %v", win)
+}
+
 func (m *Manager) gatherWindows() error {
 	tree, err := xproto.QueryTree(m.xc, m.xroot.Root).Reply()
 	if err != nil {
@@ -173,7 +195,7 @@ func (m *Manager) gatherWindows() error {
 		return errors.New("could not query window tree")
 	}
 	for _, w := range tree.Children {
-		m.ws.AddWindow(m.xc, w)
+		m.addWindow(w)
 	}
 	return nil
 }
@@ -245,15 +267,4 @@ func (m *Manager) grabKeys() error {
 		}
 	}
 	return nil
-}
-
-func (m *Manager) getAtom(name string) xproto.Atom {
-	reply, err := xproto.InternAtom(m.xc, false, uint16(len(name)), name).Reply()
-	if err != nil {
-		log.Fatal(err)
-	}
-	if reply == nil {
-		return 0
-	}
-	return reply.Atom
 }
