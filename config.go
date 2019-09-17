@@ -1,6 +1,6 @@
-package main
+package marwind
 
 const (
-	innerGap uint32 = 4
-	outerGap uint32 = 2
+	InnerGap uint32 = 4
+	OuterGap uint32 = 2
 )

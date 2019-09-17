@@ -1,1 +1,5 @@
+# Built binaries
+/bin
+
+# Editor files
 .idea

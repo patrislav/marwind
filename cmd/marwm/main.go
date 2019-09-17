@@ -3,13 +3,14 @@ package main
 import (
 	"log"
 
-	"github.com/patrislav/marwind-wm/manager"
+	"github.com/patrislav/marwind"
+	"github.com/patrislav/marwind/pkg/manager"
 )
 
 func main() {
 	mgr, err := manager.New(manager.Config{
-		InnerGap: innerGap,
-		OuterGap: outerGap,
+		InnerGap: marwind.InnerGap,
+		OuterGap: marwind.OuterGap,
 	})
 	if err != nil {
 		log.Fatal(err)

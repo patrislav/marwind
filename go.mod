@@ -1,4 +1,4 @@
-module github.com/patrislav/marwind-wm
+module github.com/patrislav/marwind
 
 go 1.12
 
