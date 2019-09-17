@@ -62,6 +62,26 @@ func initActions(m *Manager) []*Action {
 			modifiers: mod1 | shift,
 			act:       func() error { return handleMoveWindow(m, container.MoveRight) },
 		},
+		{
+			sym:       keysym.XK_y,
+			modifiers: mod1 | shift,
+			act:       func() error { return handleResizeWindow(m, container.ResizeHoriz, -5) },
+		},
+		{
+			sym:       keysym.XK_u,
+			modifiers: mod1 | shift,
+			act:       func() error { return handleResizeWindow(m, container.ResizeVert, 5) },
+		},
+		{
+			sym:       keysym.XK_i,
+			modifiers: mod1 | shift,
+			act:       func() error { return handleResizeWindow(m, container.ResizeVert, -5) },
+		},
+		{
+			sym:       keysym.XK_o,
+			modifiers: mod1 | shift,
+			act:       func() error { return handleResizeWindow(m, container.ResizeHoriz, 5) },
+		},
 	}
 	actions = appendWorkspaceActions(m, actions, mod1)
 	for i, syms := range m.keymap {
@@ -154,4 +174,17 @@ func handleMoveWindow(m *Manager, dir container.MoveDirection) error {
 		return fmt.Errorf("could not find frame with window %v", m.activeWin)
 	}
 	return m.warpPointerToFrame(frame)
+}
+
+func handleResizeWindow(m *Manager, dir container.ResizeDirection, pct int) error {
+	ws := m.outputs[0].CurrentWorkspace()
+	err := ws.ResizeWindow(m.activeWin, dir, pct)
+	if err != nil {
+		return err
+	}
+	err = m.renderWorkspace(ws)
+	if err != nil {
+		return err
+	}
+	return nil
 }

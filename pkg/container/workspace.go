@@ -15,6 +15,13 @@ const (
 	MoveDown
 )
 
+type ResizeDirection uint8
+
+const (
+	ResizeVert ResizeDirection = iota
+	ResizeHoriz
+)
+
 type WorkspaceConfig struct {
 	Gap uint32
 }
@@ -109,6 +116,59 @@ func (ws *Workspace) MoveWindow(win xproto.Window, dir MoveDirection) error {
 			col.frames[i+1] = frame
 			col.frames[i] = other
 		}
+	}
+	return nil
+}
+
+func (ws *Workspace) ResizeWindow(win xproto.Window, dir ResizeDirection, pct int) error {
+	frame := ws.findFrame(func(f *Frame) bool { return f.window == win })
+	if frame == nil {
+		return nil
+	}
+	switch dir {
+	case ResizeHoriz:
+		if len(ws.columns) < 2 {
+			return nil
+		}
+		min := uint32(float32(ws.Rect().W) * 0.1)
+		dwFull := int(float32(ws.Rect().W) * (float32(pct) / 100))
+		if uint32(int(frame.col.width)+dwFull) < min {
+			return nil
+		}
+		dwPart := dwFull/len(ws.columns) - 1
+		dwFinal := 0
+		for _, col := range ws.columns {
+			if col != frame.col {
+				next := uint32(int(col.width) - dwPart)
+				if next >= min {
+					col.width = next
+					dwFinal += dwPart
+				}
+			}
+		}
+		frame.col.width = uint32(int(frame.col.width) + dwFinal)
+	case ResizeVert:
+		col := frame.col
+		if len(col.frames) < 2 {
+			return nil
+		}
+		min := uint32(float32(ws.Rect().H) * 0.1)
+		dhFull := int(float32(ws.Rect().H) * (float32(pct) / 100))
+		if uint32(int(frame.height)+dhFull) < min {
+			return nil
+		}
+		dhPart := dhFull/len(col.frames) - 1
+		dhFinal := 0
+		for _, f := range col.frames {
+			if f != frame {
+				next := uint32(int(f.height) - dhPart)
+				if next >= min {
+					f.height = next
+					dhFinal += dhPart
+				}
+			}
+		}
+		frame.height = uint32(int(frame.height) + dhFinal)
 	}
 	return nil
 }
@@ -240,4 +300,11 @@ func (ws *Workspace) show() error {
 		}
 	}
 	return err
+}
+
+func abs(x int) int {
+	if x < 0 {
+		return -x
+	}
+	return x
 }
