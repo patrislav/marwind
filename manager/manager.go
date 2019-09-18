@@ -102,7 +102,7 @@ func (m *Manager) Run() error {
 		switch e := xev.(type) {
 		case xproto.KeyPressEvent:
 			if err := m.handleKeyPressEvent(e); err != nil {
-				return err
+				log.Println(err)
 			}
 		case xproto.ConfigureRequestEvent:
 			ev := xproto.ConfigureNotifyEvent{
@@ -286,7 +286,18 @@ func (m *Manager) grabKeys() error {
 	return nil
 }
 
-func (m *Manager) switchWorkspace(output *container.Output, id uint8) error {
+func (m *Manager) switchWorkspace(id uint8) error {
+	nextWs, err := m.ensureWorkspace(id)
+	if err != nil {
+		return err
+	}
+	if err := m.removeFocus(); err != nil {
+		return err
+	}
+	return nextWs.Output().SwitchWorkspace(nextWs)
+}
+
+func (m *Manager) ensureWorkspace(id uint8) (*container.Workspace, error) {
 	var nextWs *container.Workspace
 	for _, ws := range m.workspaces {
 		if ws.ID == id {
@@ -295,19 +306,16 @@ func (m *Manager) switchWorkspace(output *container.Output, id uint8) error {
 		}
 	}
 	if nextWs == nil {
-		return fmt.Errorf("no workspace with ID %d", id)
+		return nil, fmt.Errorf("no workspace with ID %d", id)
 	}
 	switch {
 	case nextWs.Output() == nil:
-		err := output.AddWorkspace(nextWs)
+		err := m.outputs[0].AddWorkspace(nextWs)
 		if err != nil {
-			return err
+			return nil, err
 		}
-	case nextWs.Output() != output:
-		return fmt.Errorf("multiple outputs not supported yet")
+	case nextWs.Output() != m.outputs[0]:
+		return nil, fmt.Errorf("multiple outputs not supported yet")
 	}
-	if err := m.removeFocus(); err != nil {
-		return err
-	}
-	return output.SwitchWorkspace(nextWs)
+	return nextWs, nil
 }

@@ -83,7 +83,7 @@ func initActions(m *Manager) []*Action {
 			act:       func() error { return handleResizeWindow(m, container.ResizeHoriz, 5) },
 		},
 	}
-	actions = appendWorkspaceActions(m, actions, mod1)
+	actions = appendWorkspaceActions(m, actions, mod1, mod1|shift)
 	for i, syms := range m.keymap {
 		for _, sym := range syms {
 			for c := range actions {
@@ -96,7 +96,7 @@ func initActions(m *Manager) []*Action {
 	return actions
 }
 
-func appendWorkspaceActions(m *Manager, actions []*Action, switchMod int) []*Action {
+func appendWorkspaceActions(m *Manager, actions []*Action, switchMod int, moveMod int) []*Action {
 	for i := 0; i < maxWorkspaces; i++ {
 		var sym xproto.Keysym
 		if i == 9 {
@@ -109,8 +109,13 @@ func appendWorkspaceActions(m *Manager, actions []*Action, switchMod int) []*Act
 			sym:       sym,
 			modifiers: switchMod,
 			act: func() error {
-				fmt.Println("switching", wsID)
-				return m.switchWorkspace(m.outputs[0], uint8(wsID))
+				return m.switchWorkspace(uint8(wsID))
+			},
+		}, &Action{
+			sym:       sym,
+			modifiers: moveMod,
+			act: func() error {
+				return handleMoveWindowToWorkspace(m, uint8(wsID))
 			},
 		})
 	}
@@ -183,6 +188,42 @@ func handleResizeWindow(m *Manager, dir container.ResizeDirection, pct int) erro
 		return err
 	}
 	err = m.renderWorkspace(ws)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func handleMoveWindowToWorkspace(m *Manager, wsID uint8) error {
+	curWs := m.outputs[0].CurrentWorkspace()
+	nextWs, err := m.ensureWorkspace(wsID)
+	if err != nil {
+		return err
+	}
+	if nextWs == curWs {
+		return nil
+	}
+	frame := m.findFrame(func(f *container.Frame) bool { return f.Window() == m.activeWin })
+	if frame == nil {
+		return fmt.Errorf("the window is not mapped to any frame")
+	}
+	err = curWs.DeleteWindow(frame.Window())
+	if err != nil {
+		return err
+	}
+	err = nextWs.AddFrame(frame)
+	if err != nil {
+		return err
+	}
+	err = frame.Unmap()
+	if err != nil {
+		return err
+	}
+	err = m.renderWorkspace(nextWs)
+	if err != nil {
+		return err
+	}
+	err = m.renderWorkspace(curWs)
 	if err != nil {
 		return err
 	}
