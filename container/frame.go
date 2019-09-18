@@ -2,7 +2,7 @@ package container
 
 import (
 	"github.com/BurntSushi/xgb/xproto"
-	"github.com/patrislav/marwind/pkg/x11"
+	"github.com/patrislav/marwind/x11"
 )
 
 type WinType uint8

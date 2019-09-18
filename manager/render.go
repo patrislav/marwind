@@ -2,8 +2,8 @@ package manager
 
 import (
 	"github.com/BurntSushi/xgb/xproto"
-	"github.com/patrislav/marwind/pkg/container"
-	"github.com/patrislav/marwind/pkg/x11"
+	"github.com/patrislav/marwind/container"
+	"github.com/patrislav/marwind/x11"
 )
 
 func (m *Manager) renderOutput(o *container.Output) error {

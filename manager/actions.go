@@ -7,9 +7,9 @@ import (
 	"time"
 
 	"github.com/BurntSushi/xgb/xproto"
-	"github.com/patrislav/marwind/pkg/container"
-	"github.com/patrislav/marwind/pkg/keysym"
-	"github.com/patrislav/marwind/pkg/x11"
+	"github.com/patrislav/marwind/container"
+	"github.com/patrislav/marwind/keysym"
+	"github.com/patrislav/marwind/x11"
 )
 
 type Action struct {

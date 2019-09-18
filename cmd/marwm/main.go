@@ -4,7 +4,7 @@ import (
 	"log"
 
 	"github.com/patrislav/marwind"
-	"github.com/patrislav/marwind/pkg/manager"
+	"github.com/patrislav/marwind/manager"
 )
 
 func main() {
