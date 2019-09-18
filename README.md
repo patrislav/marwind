@@ -11,6 +11,33 @@ Marwind is a simple X11 tiling window manager written in Go. It was inspired by 
 - Dynamically reconfigurable. Provide standard HTTP / gRPC endpoints for on-the-fly configuration, without the need to reload the entire WM. These endpoints will also serve as points of communication with external applications.
 - Clean code and documentation
 
+## Limitations
+
+This is a list of features that are planned but still missing in the software:
+
+- There are no tests and no documentation yet
+- No window decorations (e.g. title bars)
+- No multi-monitor support
+- No mouse support
+- No floating windows
+- No configuration available
+
+## Installation
+
+### From source
+
+With Go environment set up and the repository cloned, it's enough to run:
+
+```bash
+make
+```
+
+The compiled binaries will be located in the `bin` directory. The window manager can be started using:
+
+```bash
+./bin/marwm
+```
+
 ## Licence
 
 Copyright 2019 Patryk Kalinowski. All rights reserved.
