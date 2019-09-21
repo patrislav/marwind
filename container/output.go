@@ -2,6 +2,7 @@ package container
 
 import (
 	"fmt"
+	"sort"
 
 	"github.com/BurntSushi/xgb/xproto"
 	"github.com/patrislav/marwind/x11"
@@ -38,13 +39,14 @@ func (o *Output) SwitchWorkspace(next *Workspace) error {
 	if check == nil {
 		return fmt.Errorf("workspace is not a part of this output")
 	}
-	err := o.currentWs.hide()
-	if err != nil {
+	if err := next.show(); err != nil {
 		return err
 	}
-	err = next.show()
-	if err != nil {
+	if err := o.currentWs.hide(); err != nil {
 		return err
+	}
+	if len(o.currentWs.columns) == 0 {
+		o.removeWorkspace(o.currentWs)
 	}
 	o.currentWs = next
 	return nil
@@ -53,6 +55,9 @@ func (o *Output) SwitchWorkspace(next *Workspace) error {
 func (o *Output) AddWorkspace(ws *Workspace) error {
 	ws.setOutput(o)
 	o.workspaces = append(o.workspaces, ws)
+	sort.Slice(o.workspaces, func(i, j int) bool {
+		return o.workspaces[i].Name < o.workspaces[j].Name
+	})
 	if o.currentWs == nil {
 		o.currentWs = ws
 		return ws.show()
@@ -141,4 +146,14 @@ func (o *Output) FindWorkspace(predicate func(*Workspace) bool) *Workspace {
 		}
 	}
 	return nil
+}
+
+func (o *Output) removeWorkspace(workspace *Workspace) {
+	for i, ws := range o.workspaces {
+		if ws == workspace {
+			o.workspaces = append(o.workspaces[:i], o.workspaces[i+1:]...)
+			ws.output = nil
+			return
+		}
+	}
 }

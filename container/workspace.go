@@ -35,7 +35,7 @@ type Workspace struct {
 }
 
 func NewWorkspace(id uint8, config WorkspaceConfig) *Workspace {
-	return &Workspace{config: config, ID: id}
+	return &Workspace{config: config, ID: id, Name: fmt.Sprintf("%d", id+1)}
 }
 
 func (ws *Workspace) AddFrame(frame *Frame) error {

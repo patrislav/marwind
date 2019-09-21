@@ -39,8 +39,74 @@ func GetWindowStruts(win xproto.Window) (*Struts, error) {
 	}, nil
 }
 
+func SetWMName(name string) error {
+	buf := make([]byte, 0)
+	buf = append(buf, name...)
+	buf = append(buf, 0)
+	return changeProp(Screen.Root, 8, "_NET_WM_NAME", xproto.AtomString, buf)
+}
+
 func SetActiveWindow(win xproto.Window) error {
 	return changeProp32(Screen.Root, "_NET_ACTIVE_WINDOW", xproto.AtomWindow, uint32(win))
+}
+
+func SetNumberOfDesktops(num int) error {
+	return changeProp32(Screen.Root, "_NET_NUMBER_OF_DESKTOPS", xproto.AtomCardinal, uint32(num))
+}
+
+func SetCurrentDesktop(index int) error {
+	return changeProp32(Screen.Root, "_NET_CURRENT_DESKTOP", xproto.AtomCardinal, uint32(index))
+}
+
+func SetDesktopViewport(num int) error {
+	vals := make([]uint32, num*2)
+	return changeProp32(Screen.Root, "_NET_DESKTOP_VIEWPORT", xproto.AtomCardinal, vals...)
+}
+
+func SetDesktopNames(names []string) error {
+	buf := make([]byte, 0)
+	for _, name := range names {
+		buf = append(buf, name...)
+		buf = append(buf, 0)
+	}
+	return changeProp(Screen.Root, 8, "_NET_DESKTOP_NAMES", Atom("UTF8_STRING"), buf)
+}
+
+func SetClientList(windows []xproto.Window) error {
+	vals := make([]uint32, len(windows))
+	for i, win := range windows {
+		vals[i] = uint32(win)
+	}
+	return changeProp32(Screen.Root, "_NET_CLIENT_LIST", xproto.AtomWindow, vals...)
+}
+
+func SetDesktopHints(names []string, index int, windows []xproto.Window) error {
+	var err error
+	err = SetNumberOfDesktops(len(names))
+	if err != nil {
+		return err
+	}
+	err = SetDesktopViewport(len(names))
+	if err != nil {
+		return err
+	}
+	err = SetDesktopNames(names)
+	if err != nil {
+		return err
+	}
+	err = SetCurrentDesktop(index)
+	if err != nil {
+		return err
+	}
+	err = SetClientList(windows)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func SetWindowDesktop(win xproto.Window, desktop int) error {
+	return changeProp32(win, "_NET_WM_DESKTOP", xproto.AtomCardinal, uint32(desktop))
 }
 
 func setHints() error {

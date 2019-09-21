@@ -81,6 +81,8 @@ func (m *Manager) Init() error {
 
 	m.gatherWindows()
 
+	x11.SetWMName("Marwind")
+
 	return nil
 }
 
@@ -93,6 +95,10 @@ func (m *Manager) Close() {
 
 // Run starts the manager's event loop
 func (m *Manager) Run() error {
+	err := m.updateDesktopHints()
+	if err != nil {
+		return err
+	}
 	for {
 		xev, err := x11.X.WaitForEvent()
 		if err != nil {
@@ -130,6 +136,14 @@ func (m *Manager) Run() error {
 
 		case xproto.EnterNotifyEvent:
 			m.setFocus(e.Event, e.Time)
+
+		case xproto.ClientMessageEvent:
+			switch e.Type {
+			case x11.Atom("_NET_CURRENT_DESKTOP"):
+				m.switchWorkspace(uint8(e.Data.Data32[0]))
+			default:
+				log.Println(xev)
+			}
 
 		default:
 			log.Println(xev)
@@ -294,7 +308,10 @@ func (m *Manager) switchWorkspace(id uint8) error {
 	if err := m.removeFocus(); err != nil {
 		return err
 	}
-	return nextWs.Output().SwitchWorkspace(nextWs)
+	if err := nextWs.Output().SwitchWorkspace(nextWs); err != nil {
+		return err
+	}
+	return m.updateDesktopHints()
 }
 
 func (m *Manager) ensureWorkspace(id uint8) (*container.Workspace, error) {
@@ -318,4 +335,46 @@ func (m *Manager) ensureWorkspace(id uint8) (*container.Workspace, error) {
 		return nil, fmt.Errorf("multiple outputs not supported yet")
 	}
 	return nextWs, nil
+}
+
+func (m *Manager) updateDesktopHints() error {
+	out := m.outputs[0]
+	wsWins := make([][]xproto.Window, len(out.Workspaces()))
+	names := make([]string, len(out.Workspaces()))
+	current := 0
+	for i, ws := range out.Workspaces() {
+		names[i] = ws.Name
+		if ws == out.CurrentWorkspace() {
+		}
+		for _, col := range ws.Columns() {
+			for _, f := range col.Frames() {
+				wsWins[i] = append(wsWins[i], f.Window())
+			}
+		}
+		if ws == out.CurrentWorkspace() {
+			current = i
+			for _, f := range out.DockFrames(container.DockAreaTop) {
+				wsWins[i] = append(wsWins[i], f.Window())
+			}
+			for _, f := range out.DockFrames(container.DockAreaBottom) {
+				wsWins[i] = append(wsWins[i], f.Window())
+			}
+		}
+	}
+	windows := make([]xproto.Window, 0)
+	for _, wins := range wsWins {
+		for _, win := range wins {
+			windows = append(windows, win)
+		}
+	}
+	if err := x11.SetDesktopHints(names, current, windows); err != nil {
+		return err
+	}
+	var err error
+	for i, wins := range wsWins {
+		for _, win := range wins {
+			err = x11.SetWindowDesktop(win, i)
+		}
+	}
+	return err
 }
