@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"os/exec"
 	"runtime"
 
 	flag "github.com/spf13/pflag"
@@ -19,10 +20,12 @@ var (
 
 var (
 	flagVersion bool
+	initCmd     string
 )
 
 func main() {
 	flag.BoolVar(&flagVersion, "version", false, "show version and exit")
+	flag.StringVar(&initCmd, "init", "", "run this executable at startup")
 	flag.Parse()
 
 	if flagVersion {
@@ -42,6 +45,16 @@ func main() {
 	if err := mgr.Init(); err != nil {
 		log.Fatal(err)
 	}
+
+	if initCmd != "" {
+		cmd := exec.Command(initCmd)
+		err = cmd.Start()
+		if err != nil {
+			log.Fatal(err)
+		}
+		go cmd.Wait()
+	}
+
 	if err := mgr.Run(); err != nil {
 		log.Fatal(err)
 	}

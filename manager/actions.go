@@ -20,19 +20,19 @@ type Action struct {
 }
 
 func initActions(m *Manager) []*Action {
-	mod1 := xproto.ModMask1
+	mod := xproto.ModMask4
 	shift := xproto.ModMaskShift
 	actions := []*Action{
 		{
 			sym:       keysym.XK_q,
-			modifiers: mod1,
+			modifiers: mod | shift,
 			act: func() error {
 				return handleRemoveWindow(m)
 			},
 		},
 		{
 			sym:       keysym.XK_d,
-			modifiers: mod1,
+			modifiers: mod,
 			act: func() error {
 				cmd := exec.Command("rofi", "-show", "drun")
 				err := cmd.Run()
@@ -44,46 +44,46 @@ func initActions(m *Manager) []*Action {
 		},
 		{
 			sym:       keysym.XK_h,
-			modifiers: mod1 | shift,
+			modifiers: mod | shift,
 			act:       func() error { return handleMoveWindow(m, container.MoveLeft) },
 		},
 		{
 			sym:       keysym.XK_j,
-			modifiers: mod1 | shift,
+			modifiers: mod | shift,
 			act:       func() error { return handleMoveWindow(m, container.MoveDown) },
 		},
 		{
 			sym:       keysym.XK_k,
-			modifiers: mod1 | shift,
+			modifiers: mod | shift,
 			act:       func() error { return handleMoveWindow(m, container.MoveUp) },
 		},
 		{
 			sym:       keysym.XK_l,
-			modifiers: mod1 | shift,
+			modifiers: mod | shift,
 			act:       func() error { return handleMoveWindow(m, container.MoveRight) },
 		},
 		{
 			sym:       keysym.XK_y,
-			modifiers: mod1 | shift,
+			modifiers: mod | shift,
 			act:       func() error { return handleResizeWindow(m, container.ResizeHoriz, -5) },
 		},
 		{
 			sym:       keysym.XK_u,
-			modifiers: mod1 | shift,
+			modifiers: mod | shift,
 			act:       func() error { return handleResizeWindow(m, container.ResizeVert, 5) },
 		},
 		{
 			sym:       keysym.XK_i,
-			modifiers: mod1 | shift,
+			modifiers: mod | shift,
 			act:       func() error { return handleResizeWindow(m, container.ResizeVert, -5) },
 		},
 		{
 			sym:       keysym.XK_o,
-			modifiers: mod1 | shift,
+			modifiers: mod | shift,
 			act:       func() error { return handleResizeWindow(m, container.ResizeHoriz, 5) },
 		},
 	}
-	actions = appendWorkspaceActions(m, actions, mod1, mod1|shift)
+	actions = appendWorkspaceActions(m, actions, mod, mod|shift)
 	for i, syms := range m.keymap {
 		for _, sym := range syms {
 			for c := range actions {
