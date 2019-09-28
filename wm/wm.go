@@ -57,7 +57,7 @@ func (wm *WM) Init() error {
 		H: uint32(x11.Screen.HeightInPixels),
 	})
 	for i := 0; i < maxWorkspaces; i++ {
-		wm.workspaces[i] = newWorkspace(uint8(i))
+		wm.workspaces[i] = newWorkspace(uint8(i), workspaceConfig{gap: wm.config.OuterGap})
 	}
 	if err := o.addWorkspace(wm.workspaces[0]); err != nil {
 		return fmt.Errorf("failed to add workspace to output: %v", err)

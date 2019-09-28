@@ -43,14 +43,17 @@ func (wm *WM) renderDock(o *output, area dockArea) error {
 
 func (wm *WM) renderWorkspace(ws *workspace) error {
 	var err error
-	area := ws.output.workspaceArea()
-	x := area.X
+	if f := ws.singleFrame(); f != nil {
+		return wm.renderFrame(f, ws.fullArea())
+	}
+	a := ws.area()
+	x := a.X
 	for _, col := range ws.columns {
 		geom := x11.Geom{
 			X: x,
-			Y: area.Y,
+			Y: a.Y,
 			W: col.width,
-			H: area.H,
+			H: a.H,
 		}
 		if e := wm.renderColumn(col, geom); e != nil {
 			err = e
@@ -63,12 +66,13 @@ func (wm *WM) renderWorkspace(ws *workspace) error {
 func (wm *WM) renderColumn(col *column, geom x11.Geom) error {
 	var err error
 	y := geom.Y
+	gap := wm.config.InnerGap
 	for _, f := range col.frames {
 		fg := x11.Geom{
-			X: geom.X,
-			Y: y,
-			W: geom.W,
-			H: f.height,
+			X: geom.X + gap,
+			Y: y + gap,
+			W: geom.W - gap*2,
+			H: f.height - gap*2,
 		}
 		if e := wm.renderFrame(f, fg); e != nil {
 			err = e

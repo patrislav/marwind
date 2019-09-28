@@ -8,7 +8,7 @@ type column struct {
 
 func (c *column) addFrame(frm *frame, after *frame) {
 	frm.col = c
-	wsHeight := c.ws.output.workspaceArea().H
+	wsHeight := c.ws.area().H
 	if len(c.frames) > 0 {
 		frm.height = wsHeight / uint32(len(c.frames)+1)
 		remHeight := float32(wsHeight - frm.height)
@@ -36,7 +36,7 @@ func (c *column) deleteFrame(frm *frame) {
 }
 
 func (c *column) updateTiling() {
-	wsHeight := c.ws.output.workspaceArea().H
+	wsHeight := c.ws.area().H
 	// TODO: assign the heights proportional to the original height/totalHeight ratio
 	for _, f := range c.frames {
 		f.height = wsHeight / uint32(len(c.frames))

@@ -1,13 +1,22 @@
 package wm
 
-type workspace struct {
-	id uint8
-	columns []*column
-	output *output
+import (
+	"github.com/patrislav/marwind/x11"
+)
+
+type workspaceConfig struct {
+	gap uint32
 }
 
-func newWorkspace(id uint8) *workspace {
-	return &workspace{id: id}
+type workspace struct {
+	id      uint8
+	columns []*column
+	output  *output
+	config  workspaceConfig
+}
+
+func newWorkspace(id uint8, config workspaceConfig) *workspace {
+	return &workspace{id: id, config: config}
 }
 
 func (ws *workspace) setOutput(o *output) {
@@ -125,4 +134,32 @@ func (ws *workspace) updateTiling() {
 	for _, col := range ws.columns {
 		col.updateTiling()
 	}
+}
+
+func (ws *workspace) fullArea() x11.Geom { return ws.output.workspaceArea() }
+
+func (ws *workspace) area() x11.Geom {
+	a := ws.fullArea()
+	return x11.Geom{
+		X: a.X + ws.config.gap,
+		Y: a.Y + ws.config.gap,
+		W: a.W - ws.config.gap*2,
+		H: a.H - ws.config.gap*2,
+	}
+}
+
+// singleFrame returns a single frame if there's only one in the workspace, nil otherwise
+func (ws *workspace) singleFrame() *frame {
+	if ws.countAllFrames() == 1 {
+		return ws.columns[0].frames[0]
+	}
+	return nil
+}
+
+func (ws *workspace) countAllFrames() int {
+	count := 0
+	for _, col := range ws.columns {
+		count += len(col.frames)
+	}
+	return count
 }
