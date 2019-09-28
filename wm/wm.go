@@ -161,6 +161,19 @@ func (wm *WM) Run() error {
 					log.Printf("Failed to update desktop hints: %v", err)
 				}
 			}
+
+		case xproto.ClientMessageEvent:
+			switch e.Type {
+			case x11.Atom("_NET_CURRENT_DESKTOP"):
+				out := wm.outputs[0]
+				index := int(e.Data.Data32[0])
+				if index < len(out.workspaces) {
+					ws := out.workspaces[index]
+					if err := wm.switchWorkspace(ws.id); err != nil {
+						log.Printf("Failed to switch workspace: %v", err)
+					}
+				}
+			}
 		}
 	}
 }
