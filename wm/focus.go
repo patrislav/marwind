@@ -24,8 +24,7 @@ func (wm *WM) setFocus(win xproto.Window, time xproto.Timestamp) error {
 }
 
 func (wm *WM) removeFocus() error {
-	wm.activeWin = 0
-	return x11.SetActiveWindow(0)
+	return wm.setFocus(x11.Screen.Root, xproto.TimeCurrentTime)
 }
 
 func (wm *WM) takeFocusProp(prop *xproto.GetPropertyReply, win xproto.Window, time xproto.Timestamp) bool {

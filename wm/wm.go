@@ -226,7 +226,7 @@ func (wm *WM) findFrame(predicate func(*frame) bool) *frame {
 func (wm *WM) deleteFrame(f *frame) error {
 	for _, o := range wm.outputs {
 		if o.deleteFrame(f) {
-			if err := wm.setFocus(x11.Screen.Root, xproto.TimeCurrentTime); err != nil {
+			if err := wm.removeFocus(); err != nil {
 				return err
 			}
 			return wm.renderOutput(o)

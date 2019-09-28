@@ -3,7 +3,6 @@ package wm
 import (
 	"fmt"
 	"github.com/BurntSushi/xgb/xproto"
-	"github.com/patrislav/marwind/x11"
 )
 
 type MoveDirection uint8
@@ -85,7 +84,7 @@ func (wm *WM) switchWorkspace(id uint8) error {
 	if err := ws.output.switchWorkspace(ws); err != nil {
 		return fmt.Errorf("output unable to switch workpace: %v", err)
 	}
-	if err := wm.setFocus(x11.Screen.Root, xproto.TimeCurrentTime); err != nil {
+	if err := wm.removeFocus(); err != nil {
 		return fmt.Errorf("failed to remove focus: %v", err)
 	}
 	if err := wm.updateDesktopHints(); err != nil {
