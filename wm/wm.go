@@ -79,6 +79,9 @@ func (wm *WM) Close() {
 
 // Run starts the WM's X event loop
 func (wm *WM) Run() error {
+	if err := wm.updateDesktopHints(); err != nil {
+		return err
+	}
 	for {
 		xev, err := x11.X.WaitForEvent()
 		if err != nil {
@@ -118,6 +121,9 @@ func (wm *WM) Run() error {
 					log.Println("Failed to manage a window:", err)
 				}
 			}
+			if err := wm.updateDesktopHints(); err != nil {
+				log.Printf("Failed to update desktop hints: %v", err)
+			}
 
 		case xproto.UnmapNotifyEvent:
 			f := wm.findFrame(func(frm *frame) bool { return frm.client.window == e.Window })
@@ -150,6 +156,9 @@ func (wm *WM) Run() error {
 				}
 				if err := wm.deleteFrame(f); err != nil {
 					log.Println("Failed to delete the frame:", err)
+				}
+				if err := wm.updateDesktopHints(); err != nil {
+					log.Printf("Failed to update desktop hints: %v", err)
 				}
 			}
 		}
@@ -234,4 +243,46 @@ func (wm *WM) handleKeyPressEvent(e xproto.KeyPressEvent) error {
 		}
 	}
 	return nil
+}
+
+// TODO: avoid updating all hints at once
+func (wm *WM) updateDesktopHints() error {
+	out := wm.outputs[0]
+	wsWins := make([][]xproto.Window, len(out.workspaces))
+	names := make([]string, len(out.workspaces))
+	current := 0
+	for i, ws := range out.workspaces {
+		names[i] = fmt.Sprintf("%d", ws.id+1)
+		for _, col := range ws.columns {
+			for _, f := range col.frames {
+				wsWins[i] = append(wsWins[i], f.client.window)
+			}
+		}
+		if ws == out.activeWs {
+			current = i
+			for area := range out.dockAreas {
+				for _, f := range out.dockAreas[area] {
+					wsWins[i] = append(wsWins[i], f.client.window)
+				}
+			}
+		}
+	}
+	windows := make([]xproto.Window, 0)
+	for _, wins := range wsWins {
+		for _, win := range wins {
+			windows = append(windows, win)
+		}
+	}
+	if err := x11.SetDesktopHints(names, current, windows); err != nil {
+		return err
+	}
+	var err error
+	for i, wins := range wsWins {
+		for _, win := range wins {
+			if e := x11.SetWindowDesktop(win, i); e != nil {
+				err = e
+			}
+		}
+	}
+	return err
 }

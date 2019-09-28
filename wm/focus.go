@@ -6,7 +6,7 @@ import (
 )
 
 func (wm *WM) setFocus(win xproto.Window, time xproto.Timestamp) error {
-	frm := wm.findFrame(func(f *frame) bool { return f.client.window == win })
+	frm := wm.findFrame(func(f *frame) bool { return f.client.window == win && f.typ == winTypeNormal })
 	if frm == nil && win != x11.Screen.Root {
 		return nil
 	}

@@ -149,8 +149,7 @@ func handleResizeWindow(wm *WM, dir ResizeDirection, pct int) error {
 }
 
 func handleSwitchWorkspace(wm *WM, wsID uint8) error {
-	// TODO handleSwitchWorkspace
-	return nil
+	return wm.switchWorkspace(wsID)
 }
 
 func handleMoveWindowToWorkspace(wm *WM, wsID uint8) error {

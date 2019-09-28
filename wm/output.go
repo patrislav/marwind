@@ -41,6 +41,45 @@ func (o *output) addWorkspace(ws *workspace) error {
 	return nil
 }
 
+func (o *output) switchWorkspace(next *workspace) error {
+	if next == o.activeWs {
+		return nil
+	}
+	if ch := o.findWorkspace(func(ws *workspace) bool { return ws == next }); ch == nil {
+		return fmt.Errorf("workspace not part of this output")
+	}
+	if err := next.show(); err != nil {
+		return fmt.Errorf("failed to show next workspace: %v", err)
+	}
+	if err := o.activeWs.hide(); err != nil {
+		return fmt.Errorf("failed to hide previous workspace: %v", err)
+	}
+	if len(o.activeWs.columns) == 0 {
+		o.removeWorkspace(o.activeWs)
+	}
+	o.activeWs = next
+	return nil
+}
+
+func (o *output) findWorkspace(predicate func(*workspace) bool) *workspace {
+	for _, ws := range o.workspaces {
+		if predicate(ws) {
+			return ws
+		}
+	}
+	return nil
+}
+
+func (o *output) removeWorkspace(ws *workspace) {
+	for i, w := range o.workspaces {
+		if w == ws {
+			o.workspaces = append(o.workspaces[:i], o.workspaces[i+1:]...)
+			ws.output = nil
+			return
+		}
+	}
+}
+
 // addDock appends the frame as a dock of this output
 func (o *output) addDock(f *frame) error {
 	struts, err := x11.GetWindowStruts(f.client.window)

@@ -47,6 +47,9 @@ func SetWMName(name string) error {
 }
 
 func SetActiveWindow(win xproto.Window) error {
+	if win == Screen.Root {
+		win = 0
+	}
 	return changeProp32(Screen.Root, "_NET_ACTIVE_WINDOW", xproto.AtomWindow, uint32(win))
 }
 
