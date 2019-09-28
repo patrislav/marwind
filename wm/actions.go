@@ -1,6 +1,7 @@
 package wm
 
 import (
+	"log"
 	"os/exec"
 
 	"github.com/BurntSushi/xgb/xproto"
@@ -119,17 +120,28 @@ func appendWorkspaceActions(wm *WM, actions []*action, switchMod int, moveMod in
 }
 
 func handleRemoveWindow(wm *WM) error {
-	// TODO handleRemoveWindow
 	frm := wm.findFrame(func(f *frame) bool { return f.client.window == wm.activeWin })
 	if frm == nil {
+		log.Printf("WARNING: handleRemoveWindow: could not find frame with window %d\n", wm.activeWin)
 		return nil
 	}
 	return x11.GracefullyDestroyWindow(frm.client.window)
 }
 
 func handleMoveWindow(wm *WM, dir MoveDirection) error {
-	// TODO handleMoveWindow
-	return nil
+	log.Println("handleMoveWindow", dir)
+	frm := wm.findFrame(func(f *frame) bool { return f.client.window == wm.activeWin })
+	if frm == nil {
+		log.Printf("WARNING: handleMoveWindow: could not find frame with window %d\n", wm.activeWin)
+		return nil
+	}
+	if err := frm.workspace().moveFrame(frm, dir); err != nil {
+		return err
+	}
+	if err := wm.renderWorkspace(frm.workspace()); err != nil {
+		return err
+	}
+	return wm.warpPointerToFrame(frm)
 }
 
 func handleResizeWindow(wm *WM, dir ResizeDirection, pct int) error {

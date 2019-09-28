@@ -52,6 +52,57 @@ func (ws *workspace) deleteFrame(f *frame) bool {
 	return true
 }
 
+// moveFrame changes the position of a frame within a column or moves it between columns
+func (ws *workspace) moveFrame(f *frame, dir MoveDirection) error {
+	switch dir {
+	case MoveLeft:
+		i := ws.findColumnIndex(func(c *column) bool { return c == f.col })
+		origCol := f.col
+		origCol.deleteFrame(f)
+		if i == 0 {
+			col := ws.createColumn(true)
+			col.addFrame(f, nil)
+		} else {
+			col := ws.columns[i-1]
+			col.addFrame(f, nil)
+		}
+		if len(origCol.frames) == 0 {
+			ws.deleteColumn(origCol)
+		}
+	case MoveRight:
+		i := ws.findColumnIndex(func(c *column) bool { return c == f.col })
+		origCol := f.col
+		origCol.deleteFrame(f)
+		if i == len(ws.columns)-1 {
+			col := ws.createColumn(false)
+			col.addFrame(f, nil)
+		} else {
+			col := ws.columns[i+1]
+			col.addFrame(f, nil)
+		}
+		if len(origCol.frames) == 0 {
+			ws.deleteColumn(origCol)
+		}
+	case MoveUp:
+		col := f.col
+		i := col.findFrameIndex(func(frm *frame) bool { return f == frm })
+		if i > 0 {
+			other := col.frames[i-1]
+			col.frames[i-1] = f
+			col.frames[i] = other
+		}
+	case MoveDown:
+		col := f.col
+		i := col.findFrameIndex(func(frm *frame) bool { return f == frm })
+		if i < len(col.frames)-1 {
+			other := col.frames[i+1]
+			col.frames[i+1] = f
+			col.frames[i] = other
+		}
+	}
+	return nil
+}
+
 // show maps all the frames of the workspace
 func (ws *workspace) show() error {
 	var err error
