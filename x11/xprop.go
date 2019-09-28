@@ -27,7 +27,7 @@ func getProps32(win xproto.Window, name string) ([]uint32, error) {
 	}
 	vals := make([]uint32, 0)
 	for v := reply.Value; len(v) >= 4; v = v[4:] {
-		vals = append(vals, uint32(v[0]) | uint32(v[1])<<8 | uint32(v[2])<<16 | uint32(v[3])<<24)
+		vals = append(vals, uint32(v[0])|uint32(v[1])<<8|uint32(v[2])<<16|uint32(v[3])<<24)
 	}
 	return vals, nil
 }

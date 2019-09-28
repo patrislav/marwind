@@ -6,6 +6,6 @@ import (
 
 // client wraps a single X client (window)
 type client struct {
-	frame *frame
+	frame  *frame
 	window xproto.Window
 }

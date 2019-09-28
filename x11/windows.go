@@ -24,7 +24,7 @@ func GracefullyDestroyWindow(win xproto.Window) error {
 					Format: 32,
 					Window: win,
 					Type:   Atom("WM_PROTOCOLS"),
-					Data:   xproto.ClientMessageDataUnionData32New([]uint32{
+					Data: xproto.ClientMessageDataUnionData32New([]uint32{
 						uint32(Atom("WM_DELETE_WINDOW")),
 						uint32(t),
 						0,
