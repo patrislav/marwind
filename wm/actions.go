@@ -129,7 +129,6 @@ func handleRemoveWindow(wm *WM) error {
 }
 
 func handleMoveWindow(wm *WM, dir MoveDirection) error {
-	log.Println("handleMoveWindow", dir)
 	frm := wm.findFrame(func(f *frame) bool { return f.client.window == wm.activeWin })
 	if frm == nil {
 		log.Printf("WARNING: handleMoveWindow: could not find frame with window %d\n", wm.activeWin)
