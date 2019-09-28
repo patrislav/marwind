@@ -153,6 +153,13 @@ func handleSwitchWorkspace(wm *WM, wsID uint8) error {
 }
 
 func handleMoveWindowToWorkspace(wm *WM, wsID uint8) error {
-	// TODO handleMoveWindowToWorkspace
+	frm := wm.findFrame(func(f *frame) bool { return f.client.window == wm.activeWin })
+	if frm == nil {
+		log.Printf("WARNING: handleMoveWindowToWorkspace: could not find frame with window %d\n", wm.activeWin)
+		return nil
+	}
+	if err := wm.moveFrameToWorkspace(frm, wsID); err != nil {
+		return err
+	}
 	return nil
 }

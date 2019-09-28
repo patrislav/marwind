@@ -93,6 +93,36 @@ func (wm *WM) switchWorkspace(id uint8) error {
 	return nil
 }
 
+func (wm *WM) moveFrameToWorkspace(f *frame, wsID uint8) error {
+	current := wm.outputs[0].activeWs
+	next, err := wm.ensureWorkspace(wsID)
+	if err != nil {
+		return err
+	}
+	if next == current {
+		return nil
+	}
+	if !current.deleteFrame(f) {
+		return fmt.Errorf("frame not contained within workspace %d", wsID)
+	}
+	if err := next.addFrame(f); err != nil {
+		return fmt.Errorf("failed to add the frame to the next workspace: %v", err)
+	}
+	if err := f.doUnmap(); err != nil {
+		return fmt.Errorf("failed to unmap the frame: %v", err)
+	}
+	if err := wm.renderWorkspace(next); err != nil {
+		return fmt.Errorf("failed to render next workspace: %v", err)
+	}
+	if err := wm.renderWorkspace(current); err != nil {
+		return fmt.Errorf("failed to render previous workspace: %v", err)
+	}
+	if err := wm.updateDesktopHints(); err != nil {
+		return fmt.Errorf("failed to update desktop hints: %v", err)
+	}
+	return nil
+}
+
 // ensureWorkspace looks up a workspace by ID, adding it to the current output if needed
 func (wm *WM) ensureWorkspace(id uint8) (*workspace, error) {
 	var nextWs *workspace
