@@ -103,6 +103,56 @@ func (ws *workspace) moveFrame(f *frame, dir MoveDirection) error {
 	return nil
 }
 
+// resizeFrame changes the size of the frame by the given percent
+func (ws *workspace) resizeFrame(f *frame, dir ResizeDirection, pct int) error {
+	switch dir {
+	case ResizeHoriz:
+		if len(ws.columns) < 2 {
+			return nil
+		}
+		min := uint32(float32(ws.area().W) * 0.1)
+		dwFull := int(float32(ws.area().W) * (float32(pct) / 100))
+		if uint32(int(f.col.width)+dwFull) < min {
+			return nil
+		}
+		dwPart := dwFull/len(ws.columns) - 1
+		dwFinal := 0
+		for _, col := range ws.columns {
+			if col != f.col {
+				next := uint32(int(col.width) - dwPart)
+				if next >= min {
+					col.width = next
+					dwFinal += dwPart
+				}
+			}
+		}
+		f.col.width = uint32(int(f.col.width) + dwFinal)
+	case ResizeVert:
+		col := f.col
+		if len(col.frames) < 2 {
+			return nil
+		}
+		min := uint32(float32(ws.area().H) * 0.1)
+		dhFull := int(float32(ws.area().H) * (float32(pct) / 100))
+		if uint32(int(f.height)+dhFull) < min {
+			return nil
+		}
+		dhPart := dhFull/len(col.frames) - 1
+		dhFinal := 0
+		for _, other := range col.frames {
+			if f != other {
+				next := uint32(int(other.height) - dhPart)
+				if next >= min {
+					other.height = next
+					dhFinal += dhPart
+				}
+			}
+		}
+		f.height = uint32(int(f.height) + dhFinal)
+	}
+	return nil
+}
+
 // show maps all the frames of the workspace
 func (ws *workspace) show() error {
 	var err error

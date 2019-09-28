@@ -144,8 +144,18 @@ func handleMoveWindow(wm *WM, dir MoveDirection) error {
 }
 
 func handleResizeWindow(wm *WM, dir ResizeDirection, pct int) error {
-	// TODO handleResizeWindow
-	return nil
+	frm := wm.findFrame(func(f *frame) bool { return f.client.window == wm.activeWin })
+	if frm == nil {
+		log.Printf("WARNING: handleResizeWindow: could not find frame with window %d\n", wm.activeWin)
+		return nil
+	}
+	if err := frm.workspace().resizeFrame(frm, dir, pct); err != nil {
+		return err
+	}
+	if err := wm.renderWorkspace(frm.workspace()); err != nil {
+		return err
+	}
+	return wm.warpPointerToFrame(frm)
 }
 
 func handleSwitchWorkspace(wm *WM, wsID uint8) error {
