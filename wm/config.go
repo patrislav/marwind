@@ -1,4 +1,4 @@
-package manager
+package wm
 
 type Config struct {
 	InnerGap uint32

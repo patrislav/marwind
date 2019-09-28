@@ -10,7 +10,7 @@ import (
 	flag "github.com/spf13/pflag"
 
 	"github.com/patrislav/marwind"
-	"github.com/patrislav/marwind/manager"
+	"github.com/patrislav/marwind/wm"
 )
 
 var (
@@ -34,7 +34,7 @@ func main() {
 		os.Exit(0)
 	}
 
-	mgr, err := manager.New(manager.Config{
+	mgr, err := wm.New(wm.Config{
 		InnerGap: marwind.InnerGap,
 		OuterGap: marwind.OuterGap,
 	})
