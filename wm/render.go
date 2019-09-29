@@ -94,28 +94,34 @@ func (wm *WM) renderFrame(f *frame, geom x11.Geom) error {
 		if err := xproto.ConfigureWindowChecked(x11.X, f.parent, mask, parentVals).Check(); err != nil {
 			return err
 		}
-		clientVals[0], clientVals[1] = 0, 0
+		border := uint32(wm.config.BorderWidth)
+		clientVals = []uint32{border, border, geom.W - border*2, geom.H - border*2}
 	}
 	if err := xproto.ConfigureWindowChecked(x11.X, f.client.window, mask, clientVals).Check(); err != nil {
 		return err
 	}
-	if err := configureNotify(f); err != nil {
+	if err := wm.configureNotify(f); err != nil {
 		return err
 	}
 	return nil
 }
 
-func configureNotify(f *frame) error {
+func (wm *WM) configureNotify(f *frame) error {
 	// Hack for Java applications as described here:
 	// https://stackoverflow.com/questions/31646544/xlib-reparenting-a-java-window-with-popups-properly-translated
 	// TODO: when window decorations are added, this should change to include them
+	geom := f.geom
+	if f.parent != 0 {
+		border := uint32(wm.config.BorderWidth)
+		geom = x11.Geom{f.geom.X + border, f.geom.Y + border, f.geom.W - border*2, f.geom.H - border*2}
+	}
 	ev := xproto.ConfigureNotifyEvent{
 		Event:            f.client.window,
 		Window:           f.client.window,
-		X:                int16(f.geom.X),
-		Y:                int16(f.geom.Y),
-		Width:            uint16(f.geom.W),
-		Height:           uint16(f.geom.H),
+		X:                int16(geom.X),
+		Y:                int16(geom.Y),
+		Width:            uint16(geom.W),
+		Height:           uint16(geom.H),
 		BorderWidth:      0,
 		AboveSibling:     0,
 		OverrideRedirect: true,

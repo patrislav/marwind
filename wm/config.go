@@ -10,4 +10,7 @@ type Config struct {
 	LauncherCommand string
 	// Shell command to execute after using the "Terminal" binding (Win + Shift + Enter by default)
 	TerminalCommand string
+
+	BorderWidth uint8
+	BorderColor uint32
 }

@@ -108,7 +108,7 @@ func (wm *WM) Run() error {
 		case xproto.MapNotifyEvent:
 			f := wm.findFrame(func(frm *frame) bool { return frm.client.window == e.Window })
 			if f != nil {
-				if err := configureNotify(f); err != nil {
+				if err := wm.configureNotify(f); err != nil {
 					log.Printf("Failed to send ConfigureNotify event to %d: %v\n", e.Window, err)
 				}
 			}
@@ -301,7 +301,7 @@ func (wm *WM) updateDesktopHints() error {
 func (wm *WM) handleConfigureRequest(e xproto.ConfigureRequestEvent) error {
 	f := wm.findFrame(func(frm *frame) bool { return frm.client.window == e.Window })
 	if f != nil {
-		if err := configureNotify(f); err != nil {
+		if err := wm.configureNotify(f); err != nil {
 			return fmt.Errorf("failed to send ConfigureNotify event to %d: %v", e.Window, err)
 		}
 		return nil

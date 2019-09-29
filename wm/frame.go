@@ -25,13 +25,13 @@ type frame struct {
 	geom   x11.Geom
 }
 
-func createFrame(win xproto.Window, typ winType) (*frame, error) {
+func (wm *WM) createFrame(win xproto.Window, typ winType) (*frame, error) {
 	f := &frame{typ: typ}
 	c := &client{window: win, frame: f}
 	f.client = c
 
 	if typ == winTypeNormal {
-		parent, err := createParent()
+		parent, err := wm.createParent()
 		if err != nil {
 			return nil, fmt.Errorf("failed to create parent: %v", err)
 		}
@@ -107,7 +107,7 @@ func (f *frame) workspace() *workspace {
 }
 
 // createParent generates an X window and sets it up so that it can be used for reparenting
-func createParent() (xproto.Window, error) {
+func (wm *WM) createParent() (xproto.Window, error) {
 	id, err := xproto.NewWindowId(x11.X)
 	if err != nil {
 		return 0, err
@@ -116,8 +116,10 @@ func createParent() (xproto.Window, error) {
 	vdepth := x11.Screen.RootDepth
 	err = xproto.CreateWindowChecked(x11.X, vdepth, id, x11.Screen.Root,
 		0, 0, 1, 1, 0, xproto.WindowClassInputOutput, visual,
-		xproto.CwEventMask,
+		xproto.CwBackPixel|xproto.CwOverrideRedirect|xproto.CwEventMask,
 		[]uint32{
+			wm.config.BorderColor,
+			1,
 			xproto.EventMaskSubstructureRedirect |
 				xproto.EventMaskButtonPress |
 				xproto.EventMaskButtonRelease |

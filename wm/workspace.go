@@ -182,10 +182,9 @@ func (ws *workspace) hide() error {
 // createColumn creates a new empty column either at the start (if the start argument is true)
 // or the end of the workspace area.
 func (ws *workspace) createColumn(start bool) *column {
-	wsArea := ws.output.workspaceArea()
-	wsWidth := wsArea.W
+	wsWidth := ws.area().W
 	origLen := len(ws.columns)
-	col := &column{ws: ws, width: wsArea.W / uint32(origLen+1)}
+	col := &column{ws: ws, width: ws.area().W / uint32(origLen+1)}
 	if origLen > 0 {
 		col.width = wsWidth / uint32(origLen+1)
 		remWidth := float32(wsWidth - col.width)

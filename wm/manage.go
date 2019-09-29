@@ -17,7 +17,7 @@ func (wm *WM) manageWindow(win xproto.Window) error {
 	if err := cookie.Check(); err != nil {
 		return fmt.Errorf("failed to change window attributes: %v", err)
 	}
-	f, err := createFrame(win, typ)
+	f, err := wm.createFrame(win, typ)
 	if err != nil {
 		return fmt.Errorf("failed to frame the window: %v", err)
 	}
