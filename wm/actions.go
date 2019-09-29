@@ -31,11 +31,25 @@ func initActions(wm *WM) []*action {
 			sym:       keysym.XK_d,
 			modifiers: mod,
 			act: func() error {
-				cmd := exec.Command("rofi", "-show", "drun")
-				err := cmd.Run()
-				if err != nil {
-					return err
-				}
+				cmd := exec.Command(wm.config.Shell, "-c", wm.config.LauncherCommand)
+				go func() {
+					if err := cmd.Run(); err != nil {
+						log.Println("Failed to open launcher:", err)
+					}
+				}()
+				return nil
+			},
+		},
+		{
+			sym:       keysym.XK_Return,
+			modifiers: mod | shift,
+			act: func() error {
+				cmd := exec.Command(wm.config.Shell, "-c", wm.config.TerminalCommand)
+				go func() {
+					if err := cmd.Run(); err != nil {
+						log.Println("Failed to open terminal:", err)
+					}
+				}()
 				return nil
 			},
 		},

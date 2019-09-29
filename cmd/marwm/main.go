@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/patrislav/marwind"
 	"log"
 	"os"
 	"os/exec"
@@ -9,7 +10,6 @@ import (
 
 	flag "github.com/spf13/pflag"
 
-	"github.com/patrislav/marwind"
 	"github.com/patrislav/marwind/wm"
 )
 
@@ -34,10 +34,7 @@ func main() {
 		os.Exit(0)
 	}
 
-	mgr, err := wm.New(wm.Config{
-		InnerGap: marwind.InnerGap,
-		OuterGap: marwind.OuterGap,
-	})
+	mgr, err := wm.New(marwind.Config)
 	if err != nil {
 		log.Fatal(err)
 	}
