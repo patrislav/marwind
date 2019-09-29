@@ -2,11 +2,10 @@ package wm
 
 import (
 	"fmt"
-	"log"
-
 	"github.com/BurntSushi/xgb/xproto"
 	"github.com/patrislav/marwind/keysym"
 	"github.com/patrislav/marwind/x11"
+	"log"
 )
 
 const maxWorkspaces = 10
@@ -104,6 +103,14 @@ func (wm *WM) Run() error {
 		case xproto.ConfigureRequestEvent:
 			if err := wm.handleConfigureRequest(e); err != nil {
 				log.Println("Failed to configure window:", err)
+			}
+
+		case xproto.MapNotifyEvent:
+			f := wm.findFrame(func(frm *frame) bool { return frm.client.window == e.Window })
+			if f != nil {
+				if err := configureNotify(f); err != nil {
+					log.Printf("Failed to send ConfigureNotify event to %d: %v\n", e.Window, err)
+				}
 			}
 
 		case xproto.MapRequestEvent:
@@ -292,6 +299,13 @@ func (wm *WM) updateDesktopHints() error {
 }
 
 func (wm *WM) handleConfigureRequest(e xproto.ConfigureRequestEvent) error {
+	f := wm.findFrame(func(frm *frame) bool { return frm.client.window == e.Window })
+	if f != nil {
+		if err := configureNotify(f); err != nil {
+			return fmt.Errorf("failed to send ConfigureNotify event to %d: %v", e.Window, err)
+		}
+		return nil
+	}
 	ev := xproto.ConfigureNotifyEvent{
 		Event:            e.Window,
 		Window:           e.Window,
