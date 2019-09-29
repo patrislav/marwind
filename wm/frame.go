@@ -28,14 +28,17 @@ type frame struct {
 func createFrame(win xproto.Window, typ winType) (*frame, error) {
 	f := &frame{typ: typ}
 	c := &client{window: win, frame: f}
-	parent, err := createParent()
-	if err != nil {
-		return nil, fmt.Errorf("failed to create parent: %v", err)
-	}
-
 	f.client = c
-	if err := f.reparent(parent); err != nil {
-		return nil, err
+
+	if typ == winTypeNormal {
+		parent, err := createParent()
+		if err != nil {
+			return nil, fmt.Errorf("failed to create parent: %v", err)
+		}
+
+		if err := f.reparent(parent); err != nil {
+			return nil, err
+		}
 	}
 	return f, nil
 }
@@ -50,8 +53,10 @@ func (f *frame) reparent(parent xproto.Window) error {
 
 // doMap causes both the client window and the frame to be mapped
 func (f *frame) doMap() error {
-	if err := xproto.MapWindowChecked(x11.X, f.parent).Check(); err != nil {
-		return fmt.Errorf("could not map parent: %v", err)
+	if f.parent != 0 {
+		if err := xproto.MapWindowChecked(x11.X, f.parent).Check(); err != nil {
+			return fmt.Errorf("could not map parent: %v", err)
+		}
 	}
 	if err := xproto.MapWindowChecked(x11.X, f.client.window).Check(); err != nil {
 		return fmt.Errorf("could not map window: %v", err)
@@ -75,8 +80,10 @@ func (f *frame) onUnmap() error {
 	if !f.mapped {
 		return nil
 	}
-	if err := xproto.UnmapWindowChecked(x11.X, f.parent).Check(); err != nil {
-		return fmt.Errorf("could not unmap parent: %v", err)
+	if f.parent != 0 {
+		if err := xproto.UnmapWindowChecked(x11.X, f.parent).Check(); err != nil {
+			return fmt.Errorf("could not unmap parent: %v", err)
+		}
 	}
 	f.mapped = false
 	return nil
@@ -84,8 +91,10 @@ func (f *frame) onUnmap() error {
 
 // onDestroy is called when the WM receives the DestroyNotify event
 func (f *frame) onDestroy() error {
-	if err := xproto.DestroyWindowChecked(x11.X, f.parent).Check(); err != nil {
-		return fmt.Errorf("could not destroy parent: %v", err)
+	if f.parent != 0 {
+		if err := xproto.DestroyWindowChecked(x11.X, f.parent).Check(); err != nil {
+			return fmt.Errorf("could not destroy parent: %v", err)
+		}
 	}
 	return nil
 }

@@ -88,16 +88,15 @@ func (wm *WM) renderFrame(f *frame, geom x11.Geom) error {
 	}
 	f.geom = geom
 	mask := uint16(xproto.ConfigWindowX | xproto.ConfigWindowY | xproto.ConfigWindowWidth | xproto.ConfigWindowHeight)
-	values := []uint32{
-		geom.X,
-		geom.Y,
-		geom.W,
-		geom.H,
+	parentVals := []uint32{geom.X, geom.Y, geom.W, geom.H}
+	clientVals := parentVals
+	if f.parent != 0 {
+		if err := xproto.ConfigureWindowChecked(x11.X, f.parent, mask, parentVals).Check(); err != nil {
+			return err
+		}
+		clientVals[0], clientVals[1] = 0, 0
 	}
-	if err := xproto.ConfigureWindowChecked(x11.X, f.parent, mask, values).Check(); err != nil {
-		return err
-	}
-	if err := xproto.ConfigureWindowChecked(x11.X, f.client.window, mask, []uint32{0, 0, geom.W, geom.H}).Check(); err != nil {
+	if err := xproto.ConfigureWindowChecked(x11.X, f.client.window, mask, clientVals).Check(); err != nil {
 		return err
 	}
 	if err := configureNotify(f); err != nil {
