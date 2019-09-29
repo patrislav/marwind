@@ -102,18 +102,9 @@ func (wm *WM) Run() error {
 			}
 
 		case xproto.ConfigureRequestEvent:
-			ev := xproto.ConfigureNotifyEvent{
-				Event:            e.Window,
-				Window:           e.Window,
-				AboveSibling:     0,
-				X:                e.X,
-				Y:                e.Y,
-				Width:            e.Width,
-				Height:           e.Height,
-				BorderWidth:      0,
-				OverrideRedirect: false,
+			if err := wm.handleConfigureRequest(e); err != nil {
+				log.Println("Failed to configure window:", err)
 			}
-			xproto.SendEventChecked(x11.X, false, e.Window, xproto.EventMaskStructureNotify, string(ev.Bytes()))
 
 		case xproto.MapRequestEvent:
 			if attr, err := xproto.GetWindowAttributes(x11.X, e.Window).Reply(); err != nil || !attr.OverrideRedirect {
@@ -298,4 +289,20 @@ func (wm *WM) updateDesktopHints() error {
 		}
 	}
 	return err
+}
+
+func (wm *WM) handleConfigureRequest(e xproto.ConfigureRequestEvent) error {
+	ev := xproto.ConfigureNotifyEvent{
+		Event:            e.Window,
+		Window:           e.Window,
+		AboveSibling:     0,
+		X:                e.X,
+		Y:                e.Y,
+		Width:            e.Width,
+		Height:           e.Height,
+		BorderWidth:      0,
+		OverrideRedirect: false,
+	}
+	xproto.SendEventChecked(x11.X, false, e.Window, xproto.EventMaskStructureNotify, string(ev.Bytes()))
+	return nil
 }
