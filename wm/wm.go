@@ -114,6 +114,11 @@ func (wm *WM) Run() error {
 			}
 
 		case xproto.MapRequestEvent:
+			f := wm.findFrame(func(frm *frame) bool { return frm.client.window == e.Window })
+			if f != nil {
+				log.Printf("Skipping MapRequest of an already mapped window %d\n", e.Window)
+				continue
+			}
 			if attr, err := xproto.GetWindowAttributes(x11.X, e.Window).Reply(); err != nil || !attr.OverrideRedirect {
 				if err := wm.manageWindow(e.Window); err != nil {
 					log.Println("Failed to manage a window:", err)
