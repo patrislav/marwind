@@ -94,8 +94,8 @@ func (wm *WM) renderFrame(f *frame, geom x11.Geom) error {
 		if err := xproto.ConfigureWindowChecked(x11.X, f.parent, mask, parentVals).Check(); err != nil {
 			return err
 		}
-		border := uint32(wm.config.BorderWidth)
-		clientVals = []uint32{border, border, geom.W - border*2, geom.H - border*2}
+		d := wm.getFrameDecorations(f)
+		clientVals = []uint32{d.Left, d.Top, geom.W - d.Left - d.Right, geom.H - d.Top - d.Bottom}
 	}
 	if err := xproto.ConfigureWindowChecked(x11.X, f.client.window, mask, clientVals).Check(); err != nil {
 		return err
@@ -112,8 +112,13 @@ func (wm *WM) configureNotify(f *frame) error {
 	// TODO: when window decorations are added, this should change to include them
 	geom := f.geom
 	if f.parent != 0 {
-		border := uint32(wm.config.BorderWidth)
-		geom = x11.Geom{f.geom.X + border, f.geom.Y + border, f.geom.W - border*2, f.geom.H - border*2}
+		d := wm.getFrameDecorations(f)
+		geom = x11.Geom{
+			X: f.geom.X + d.Left,
+			Y: f.geom.Y + d.Top,
+			W: f.geom.W - d.Left - d.Right,
+			H: f.geom.H - d.Top - d.Bottom,
+		}
 	}
 	ev := xproto.ConfigureNotifyEvent{
 		Event:            f.client.window,

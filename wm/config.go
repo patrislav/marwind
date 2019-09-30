@@ -13,4 +13,10 @@ type Config struct {
 
 	BorderWidth uint8
 	BorderColor uint32
+
+	TitleBarHeight            uint8
+	TitleBarBgColor           uint32
+	TitleBarFontColorActive   uint32
+	TitleBarFontColorInactive uint32
+	TitleBarFontSize          uint8
 }

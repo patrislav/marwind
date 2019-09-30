@@ -30,6 +30,8 @@ func (wm *WM) createFrame(win xproto.Window, typ winType) (*frame, error) {
 	c := &client{window: win, frame: f}
 	f.client = c
 
+	f.setInitialProperties()
+
 	if typ == winTypeNormal {
 		parent, err := wm.createParent()
 		if err != nil {
@@ -99,11 +101,45 @@ func (f *frame) onDestroy() error {
 	return nil
 }
 
+func (f *frame) onProperty(atom xproto.Atom) {
+	switch atom {
+	case x11.Atom("_NET_WM_NAME"):
+		f.setTitleProperty()
+	}
+}
+
+func (f *frame) setInitialProperties() {
+	f.setTitleProperty()
+}
+
+func (f *frame) setTitleProperty() {
+	if v, err := x11.GetWindowTitle(f.client.window); err == nil {
+		f.client.title = v
+	}
+}
+
 func (f *frame) workspace() *workspace {
 	if f.col != nil {
 		return f.col.ws
 	}
 	return nil
+}
+
+func (wm *WM) getFrameDecorations(f *frame) x11.Dimensions {
+	if f.parent == 0 {
+		return x11.Dimensions{0, 0, 0, 0}
+	}
+	var bar uint32
+	border := uint32(wm.config.BorderWidth)
+	if wm.config.TitleBarHeight > 0 {
+		bar = uint32(wm.config.TitleBarHeight) + 1
+	}
+	return x11.Dimensions{
+		Top:    border + bar,
+		Right:  border,
+		Bottom: border,
+		Left:   border,
+	}
 }
 
 // createParent generates an X window and sets it up so that it can be used for reparenting

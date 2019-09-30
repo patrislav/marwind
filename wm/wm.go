@@ -160,6 +160,12 @@ func (wm *WM) Run() error {
 				}
 			}
 
+		case xproto.PropertyNotifyEvent:
+			f := wm.findFrame(func(frm *frame) bool { return frm.client.window == e.Window })
+			if f != nil {
+				f.onProperty(e.Atom)
+			}
+
 		case xproto.ClientMessageEvent:
 			switch e.Type {
 			case x11.Atom("_NET_CURRENT_DESKTOP"):

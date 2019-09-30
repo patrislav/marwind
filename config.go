@@ -9,7 +9,9 @@ var Config = wm.Config{
 	OuterGap:        4,
 	Shell:           "/bin/sh",
 	LauncherCommand: "rofi -show drun",
-	TerminalCommand: "kitty",
+	TerminalCommand: "alacritty",
 	BorderWidth:     1,
-	BorderColor:     0xff2f343f,
+	BorderColor:     0xff9eeeee,
+
+	TitleBarHeight: 18,
 }

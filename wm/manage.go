@@ -12,8 +12,8 @@ func (wm *WM) manageWindow(win xproto.Window) error {
 	if err != nil {
 		return fmt.Errorf("failed to get window type: %v", err)
 	}
-	evtMask := []uint32{xproto.EventMaskStructureNotify | xproto.EventMaskEnterWindow}
-	cookie := xproto.ChangeWindowAttributesChecked(x11.X, win, xproto.CwEventMask, evtMask)
+	mask := uint32(xproto.EventMaskStructureNotify | xproto.EventMaskEnterWindow | xproto.EventMaskPropertyChange)
+	cookie := xproto.ChangeWindowAttributesChecked(x11.X, win, xproto.CwEventMask, []uint32{mask})
 	if err := cookie.Check(); err != nil {
 		return fmt.Errorf("failed to change window attributes: %v", err)
 	}
