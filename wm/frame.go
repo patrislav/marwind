@@ -16,19 +16,22 @@ const (
 )
 
 type frame struct {
-	col    *column
-	parent xproto.Window
-	client *client
-	height uint32
-	typ    winType
-	mapped bool
-	geom   x11.Geom
+	col      *column
+	parent   xproto.Window
+	client   *client
+	height   uint32
+	typ      winType
+	mapped   bool
+	geom     x11.Geom
+	titlebar *titlebar
 }
 
 func (wm *WM) createFrame(win xproto.Window, typ winType) (*frame, error) {
 	f := &frame{typ: typ}
 	c := &client{window: win, frame: f}
 	f.client = c
+
+	f.setInitialProperties()
 
 	if typ == winTypeNormal {
 		parent, err := wm.createParent()
@@ -39,6 +42,8 @@ func (wm *WM) createFrame(win xproto.Window, typ winType) (*frame, error) {
 		if err := f.reparent(parent); err != nil {
 			return nil, err
 		}
+
+		f.titlebar = newTitlebar(f, wm.config.BorderColor)
 	}
 	return f, nil
 }
@@ -99,11 +104,48 @@ func (f *frame) onDestroy() error {
 	return nil
 }
 
+func (f *frame) onProperty(atom xproto.Atom) {
+	switch atom {
+	case x11.Atom("_NET_WM_NAME"):
+		f.setTitleProperty()
+	}
+}
+
+func (f *frame) setInitialProperties() {
+	f.setTitleProperty()
+}
+
+func (f *frame) setTitleProperty() {
+	if v, err := x11.GetWindowTitle(f.client.window); err == nil {
+		f.client.title = v
+		if f.titlebar != nil {
+			f.titlebar.draw()
+		}
+	}
+}
+
 func (f *frame) workspace() *workspace {
 	if f.col != nil {
 		return f.col.ws
 	}
 	return nil
+}
+
+func (wm *WM) getFrameDecorations(f *frame) x11.Dimensions {
+	if f.parent == 0 {
+		return x11.Dimensions{0, 0, 0, 0}
+	}
+	var bar uint32
+	border := uint32(wm.config.BorderWidth)
+	if wm.config.TitleBarHeight > 0 {
+		bar = uint32(wm.config.TitleBarHeight) + 1
+	}
+	return x11.Dimensions{
+		Top:    border + bar,
+		Right:  border,
+		Bottom: border,
+		Left:   border,
+	}
 }
 
 // createParent generates an X window and sets it up so that it can be used for reparenting
@@ -121,6 +163,7 @@ func (wm *WM) createParent() (xproto.Window, error) {
 			wm.config.BorderColor,
 			1,
 			xproto.EventMaskSubstructureRedirect |
+				xproto.EventMaskExposure |
 				xproto.EventMaskButtonPress |
 				xproto.EventMaskButtonRelease |
 				xproto.EventMaskFocusChange,

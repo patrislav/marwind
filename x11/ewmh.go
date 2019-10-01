@@ -39,6 +39,14 @@ func GetWindowStruts(win xproto.Window) (*Struts, error) {
 	}, nil
 }
 
+func GetWindowTitle(win xproto.Window) (string, error) {
+	reply, err := getProp(win, "_NET_WM_NAME")
+	if err != nil {
+		return "", err
+	}
+	return string(reply.Value), nil
+}
+
 func SetWMName(name string) error {
 	buf := make([]byte, 0)
 	buf = append(buf, name...)

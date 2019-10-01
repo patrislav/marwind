@@ -8,4 +8,6 @@ import (
 type client struct {
 	frame  *frame
 	window xproto.Window
+
+	title string
 }
