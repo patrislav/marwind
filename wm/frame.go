@@ -43,7 +43,7 @@ func (wm *WM) createFrame(win xproto.Window, typ winType) (*frame, error) {
 			return nil, err
 		}
 
-		f.titlebar = newTitlebar(f, wm.config.BorderColor)
+		f.titlebar = newTitlebar(f, wm.titlebarConfig)
 	}
 	return f, nil
 }

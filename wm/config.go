@@ -18,5 +18,5 @@ type Config struct {
 	TitleBarBgColor           uint32
 	TitleBarFontColorActive   uint32
 	TitleBarFontColorInactive uint32
-	TitleBarFontSize          uint8
+	TitleBarFontSize          float64
 }

@@ -12,17 +12,25 @@ const maxWorkspaces = 10
 
 // WM is a struct representing the Window Manager
 type WM struct {
-	outputs    []*output
-	keymap     keysym.Keymap
-	actions    []*action
-	config     Config
-	workspaces [maxWorkspaces]*workspace
-	activeWin  xproto.Window
+	outputs        []*output
+	keymap         keysym.Keymap
+	actions        []*action
+	config         Config
+	workspaces     [maxWorkspaces]*workspace
+	activeWin      xproto.Window
+	titlebarConfig *titlebarConfig
 }
 
 // New initializes a WM and creates an X11 connection
 func New(config Config) (*WM, error) {
-	wm := &WM{config: config}
+	tc := &titlebarConfig{
+		bgColor:     config.BorderColor,
+		height:      config.TitleBarHeight,
+		fontColor:   config.TitleBarFontColorActive,
+		fontSize:    config.TitleBarFontSize,
+		borderWidth: config.BorderWidth,
+	}
+	wm := &WM{config: config, titlebarConfig: tc}
 	if err := x11.CreateConnection(); err != nil {
 		return nil, fmt.Errorf("failed to create WM: %v", err)
 	}
