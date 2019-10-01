@@ -2,14 +2,15 @@ package x11
 
 import (
 	"errors"
+	"github.com/BurntSushi/xgbutil"
 
 	"github.com/BurntSushi/xgb"
-	"github.com/BurntSushi/xgb/xinerama"
 	"github.com/BurntSushi/xgb/xproto"
 )
 
 var (
 	X      *xgb.Conn
+	XUtil  *xgbutil.XUtil
 	Screen xproto.ScreenInfo
 )
 
@@ -19,14 +20,14 @@ func CreateConnection() error {
 	if err != nil {
 		return err
 	}
+	XUtil, err = xgbutil.NewConnXgb(X)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
 func InitConnection() error {
-	if err := xinerama.Init(X); err != nil {
-		return err
-	}
-
 	conninfo := xproto.Setup(X)
 	if conninfo == nil {
 		return errors.New("could not parse X connection info")

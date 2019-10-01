@@ -178,6 +178,12 @@ func (wm *WM) Run() error {
 					}
 				}
 			}
+
+		case xproto.ExposeEvent:
+			f := wm.findFrame(func(frm *frame) bool { return frm.parent == e.Window })
+			if f != nil && f.titlebar != nil {
+				f.titlebar.draw()
+			}
 		}
 	}
 }

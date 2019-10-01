@@ -11,7 +11,8 @@ var Config = wm.Config{
 	LauncherCommand: "rofi -show drun",
 	TerminalCommand: "alacritty",
 	BorderWidth:     1,
-	BorderColor:     0xff9eeeee,
+	// BorderColor:     0xff9eeeee,
+	BorderColor: 0xffa1d1cf,
 
 	TitleBarHeight: 18,
 }

@@ -16,13 +16,14 @@ const (
 )
 
 type frame struct {
-	col    *column
-	parent xproto.Window
-	client *client
-	height uint32
-	typ    winType
-	mapped bool
-	geom   x11.Geom
+	col      *column
+	parent   xproto.Window
+	client   *client
+	height   uint32
+	typ      winType
+	mapped   bool
+	geom     x11.Geom
+	titlebar *titlebar
 }
 
 func (wm *WM) createFrame(win xproto.Window, typ winType) (*frame, error) {
@@ -41,6 +42,8 @@ func (wm *WM) createFrame(win xproto.Window, typ winType) (*frame, error) {
 		if err := f.reparent(parent); err != nil {
 			return nil, err
 		}
+
+		f.titlebar = newTitlebar(f, wm.config.BorderColor)
 	}
 	return f, nil
 }
@@ -115,6 +118,9 @@ func (f *frame) setInitialProperties() {
 func (f *frame) setTitleProperty() {
 	if v, err := x11.GetWindowTitle(f.client.window); err == nil {
 		f.client.title = v
+		if f.titlebar != nil {
+			f.titlebar.draw()
+		}
 	}
 }
 
@@ -157,6 +163,7 @@ func (wm *WM) createParent() (xproto.Window, error) {
 			wm.config.BorderColor,
 			1,
 			xproto.EventMaskSubstructureRedirect |
+				xproto.EventMaskExposure |
 				xproto.EventMaskButtonPress |
 				xproto.EventMaskButtonRelease |
 				xproto.EventMaskFocusChange,
