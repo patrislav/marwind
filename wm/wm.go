@@ -74,6 +74,9 @@ func (wm *WM) Init() error {
 	if err := x11.SetWMName("Marwind"); err != nil {
 		return fmt.Errorf("failed to set WM name: %v", err)
 	}
+	if err := wm.manageExistingClients(); err != nil {
+		return fmt.Errorf("failed to manage existing clients: %v", err)
+	}
 	return nil
 }
 
@@ -104,8 +107,11 @@ func (wm *WM) Run() error {
 			}
 
 		case xproto.EnterNotifyEvent:
-			if err := wm.setFocus(e.Event, e.Time); err != nil {
-				log.Println("Failed to set focus:", err)
+			f := wm.findFrame(func(frm *frame) bool { return frm.client.window == e.Event })
+			if f != nil {
+				if err := wm.setFocus(e.Event, e.Time); err != nil {
+					log.Println("Failed to set focus:", err)
+				}
 			}
 
 		case xproto.ConfigureRequestEvent:
@@ -344,4 +350,27 @@ func (wm *WM) handleConfigureRequest(e xproto.ConfigureRequestEvent) error {
 	}
 	xproto.SendEventChecked(x11.X, false, e.Window, xproto.EventMaskStructureNotify, string(ev.Bytes()))
 	return nil
+}
+
+func (wm *WM) manageExistingClients() error {
+	tree, err := xproto.QueryTree(x11.X, x11.Screen.Root).Reply()
+	if err != nil {
+		return err
+	}
+	for _, win := range tree.Children {
+		attrs, err := xproto.GetWindowAttributes(x11.X, win).Reply()
+		if err != nil {
+			continue
+		}
+		if attrs.MapState == xproto.MapStateUnmapped || attrs.OverrideRedirect {
+			continue
+		}
+		if err := wm.manageWindow(win); err != nil {
+			log.Println("Failed to manage an existing window:", err)
+		}
+	}
+	if err := wm.updateDesktopHints(); err != nil {
+		return err
+	}
+	return wm.renderOutput(wm.outputs[0])
 }

@@ -2,6 +2,7 @@ package wm
 
 import (
 	"fmt"
+	"github.com/BurntSushi/xgb/xfixes"
 
 	"github.com/BurntSushi/xgb/xproto"
 	"github.com/patrislav/marwind/x11"
@@ -53,6 +54,7 @@ func (f *frame) reparent(parent xproto.Window) error {
 		return fmt.Errorf("could not reparent window: %s", err)
 	}
 	f.parent = parent
+	xproto.ChangeSaveSet(x11.X, xfixes.SaveSetModeInsert, f.client.window)
 	return nil
 }
 

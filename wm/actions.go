@@ -2,6 +2,7 @@ package wm
 
 import (
 	"log"
+	"os"
 	"os/exec"
 
 	"github.com/BurntSushi/xgb/xproto"
@@ -25,6 +26,14 @@ func initActions(wm *WM) []*action {
 			modifiers: mod | shift,
 			act: func() error {
 				return handleRemoveWindow(wm)
+			},
+		},
+		{
+			sym:       keysym.XK_t,
+			modifiers: mod | shift | xproto.ModMask1,
+			act: func() error {
+				os.Exit(1)
+				return nil
 			},
 		},
 		{
