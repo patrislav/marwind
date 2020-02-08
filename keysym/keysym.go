@@ -230,4 +230,10 @@ const (
 	XK_Page_Down = 0xff56
 	XK_End       = 0xff57 // EOL
 	XK_Begin     = 0xff58 // BOL
+
+	XF86MonBrightnessUp   = 0x1008ff02
+	XF86MonBrightnessDown = 0x1008ff03
+	XF86AudioLowerVolume  = 0x1008ff11
+	XF86AudioMute         = 0x1008ff12
+	XF86AudioRaiseVolume  = 0x1008ff13
 )

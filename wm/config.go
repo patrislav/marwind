@@ -1,5 +1,9 @@
 package wm
 
+import (
+	"github.com/BurntSushi/xgb/xproto"
+)
+
 type Config struct {
 	InnerGap uint32 // Gap around each window, in pixels
 	OuterGap uint32 // Additional gap around the entire workspace, in pixels
@@ -19,4 +23,6 @@ type Config struct {
 	TitleBarFontColorActive   uint32
 	TitleBarFontColorInactive uint32
 	TitleBarFontSize          float64
+
+	Keybindings map[xproto.Keysym]string
 }

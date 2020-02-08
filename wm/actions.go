@@ -104,6 +104,23 @@ func initActions(wm *WM) []*action {
 		},
 	}
 	actions = appendWorkspaceActions(wm, actions, mod, mod|shift)
+
+	for sym, command := range wm.config.Keybindings {
+		cmd := command
+		actions = append(actions, &action{
+			sym: sym,
+			act: func() error {
+				cmd := exec.Command(wm.config.Shell, "-c", cmd)
+				go func() {
+					if err := cmd.Run(); err != nil {
+						log.Printf("Failed to run command (%s): %v\n", cmd, err)
+					}
+				}()
+				return nil
+			},
+		})
+	}
+
 	for i, syms := range wm.keymap {
 		for _, sym := range syms {
 			for c := range actions {
