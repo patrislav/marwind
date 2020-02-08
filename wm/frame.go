@@ -3,6 +3,7 @@ package wm
 import (
 	"fmt"
 	"github.com/BurntSushi/xgb/xfixes"
+	"log"
 
 	"github.com/BurntSushi/xgb/xproto"
 	"github.com/patrislav/marwind/x11"
@@ -121,7 +122,9 @@ func (f *frame) setTitleProperty() {
 	if v, err := x11.GetWindowTitle(f.client.window); err == nil {
 		f.client.title = v
 		if f.titlebar != nil {
-			f.titlebar.draw()
+			if err := f.titlebar.draw(); err != nil {
+				log.Printf("Failed to draw titlebar of window %d: %v", f.client.window, err)
+			}
 		}
 	}
 }
