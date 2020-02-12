@@ -2,46 +2,46 @@ package x11
 
 import (
 	"errors"
-	"github.com/BurntSushi/xgbutil"
-
+	"fmt"
 	"github.com/BurntSushi/xgb"
 	"github.com/BurntSushi/xgb/xproto"
+	"github.com/BurntSushi/xgbutil"
 )
 
-var (
-	X      *xgb.Conn
-	XUtil  *xgbutil.XUtil
-	Screen xproto.ScreenInfo
-)
-
-func CreateConnection() error {
-	var err error
-	X, err = xgb.NewConn()
-	if err != nil {
-		return err
-	}
-	XUtil, err = xgbutil.NewConnXgb(X)
-	if err != nil {
-		return err
-	}
-	return nil
+type Connection struct {
+	conn   *xgb.Conn
+	util   *xgbutil.XUtil
+	screen xproto.ScreenInfo
+	atoms  map[string]xproto.Atom
 }
 
-func InitConnection() error {
-	conninfo := xproto.Setup(X)
+func Connect() (*Connection, error) {
+	xconn, err := xgb.NewConn()
+	if err != nil {
+		return nil, fmt.Errorf("failed to connect: %w", err)
+	}
+	xutil, err := xgbutil.NewConnXgb(xconn)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create XUtil connection: %w", err)
+	}
+	return &Connection{conn: xconn, util: xutil}, nil
+}
+
+func (xc *Connection) Init() error {
+	conninfo := xproto.Setup(xc.conn)
 	if conninfo == nil {
 		return errors.New("could not parse X connection info")
 	}
 	if len(conninfo.Roots) != 1 {
-		return errors.New("wrong number of roots, did xinerama initialize properly?")
+		return errors.New("wrong number of roots, possibly xinerama did not initialize properly")
 	}
-	Screen = conninfo.Roots[0]
+	xc.screen = conninfo.Roots[0]
 
-	err := setHints()
+	err := xc.setHints()
 	if err != nil {
 		return err
 	}
-	err = initDesktop()
+	err = xc.initDesktop()
 	if err != nil {
 		return err
 	}
