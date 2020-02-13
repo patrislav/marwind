@@ -3,18 +3,18 @@ package wm
 type column struct {
 	ws     *workspace
 	frames []*frame
-	width  uint32
+	width  uint16
 }
 
 func (c *column) addFrame(frm *frame, after *frame) {
 	frm.col = c
 	wsHeight := c.ws.area().H
 	if len(c.frames) > 0 {
-		frm.height = wsHeight / uint32(len(c.frames)+1)
+		frm.height = wsHeight / uint16(len(c.frames)+1)
 		remHeight := float32(wsHeight - frm.height)
-		leftHeight := uint32(remHeight)
+		leftHeight := uint16(remHeight)
 		for _, f := range c.frames {
-			f.height = uint32((float32(f.height) / float32(wsHeight)) * remHeight)
+			f.height = uint16((float32(f.height) / float32(wsHeight)) * remHeight)
 			leftHeight -= f.height
 		}
 		if leftHeight != 0 {
@@ -39,7 +39,7 @@ func (c *column) updateTiling() {
 	wsHeight := c.ws.area().H
 	// TODO: assign the heights proportional to the original height/totalHeight ratio
 	for _, f := range c.frames {
-		f.height = wsHeight / uint32(len(c.frames))
+		f.height = wsHeight / uint16(len(c.frames))
 	}
 }
 

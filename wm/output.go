@@ -2,6 +2,7 @@ package wm
 
 import (
 	"fmt"
+	"github.com/patrislav/marwind/client"
 	"sort"
 
 	"github.com/patrislav/marwind/x11"
@@ -15,15 +16,16 @@ const (
 )
 
 type output struct {
-	geom       x11.Geom
+	xc         *x11.Connection
+	geom       client.Geom
 	workspaces []*workspace
 	activeWs   *workspace
 	dockAreas  [2][]*frame
 }
 
 // newOutput creates a new output from the given geometry
-func newOutput(geom x11.Geom) *output {
-	return &output{geom: geom}
+func newOutput(xc *x11.Connection, geom client.Geom) *output {
+	return &output{xc: xc, geom: geom}
 }
 
 // addWorkspace appends the workspace to this output, sorting them,
@@ -82,7 +84,7 @@ func (o *output) removeWorkspace(ws *workspace) {
 
 // addDock appends the frame as a dock of this output
 func (o *output) addDock(f *frame) error {
-	struts, err := x11.GetWindowStruts(f.client.window)
+	struts, err := o.xc.GetWindowStruts(f.cli.Window())
 	if err != nil {
 		return fmt.Errorf("failed to get struts: %v", err)
 	}
@@ -90,34 +92,34 @@ func (o *output) addDock(f *frame) error {
 	switch {
 	case struts.Top > struts.Bottom:
 		area = dockAreaTop
-		f.height = struts.Top
+		f.height = uint16(struts.Top)
 	case struts.Bottom > struts.Top:
 		area = dockAreaBottom
-		f.height = struts.Bottom
+		f.height = uint16(struts.Bottom)
 	default:
 		return fmt.Errorf("could not determine the dock position")
 	}
 	o.dockAreas[area] = append(o.dockAreas[area], f)
 	// TODO map the dock
 	o.updateTiling()
-	return f.doMap()
+	return f.cli.Map()
 }
 
 // dockHeight returns the height of the entire dock area
-func (o *output) dockHeight(area dockArea) uint32 {
-	var height uint32
+func (o *output) dockHeight(area dockArea) uint16 {
+	var height uint16
 	for _, f := range o.dockAreas[area] {
 		height += f.height
 	}
 	return height
 }
 
-func (o *output) workspaceArea() x11.Geom {
+func (o *output) workspaceArea() client.Geom {
 	top := o.dockHeight(dockAreaTop)
 	bottom := o.dockHeight(dockAreaBottom)
-	return x11.Geom{
+	return client.Geom{
 		X: o.geom.X,
-		Y: o.geom.Y + top,
+		Y: o.geom.Y + int16(top),
 		W: o.geom.W,
 		H: o.geom.H - top - bottom,
 	}

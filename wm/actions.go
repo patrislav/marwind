@@ -7,7 +7,6 @@ import (
 
 	"github.com/BurntSushi/xgb/xproto"
 	"github.com/patrislav/marwind/keysym"
-	"github.com/patrislav/marwind/x11"
 )
 
 type action struct {
@@ -160,16 +159,16 @@ func appendWorkspaceActions(wm *WM, actions []*action, switchMod int, moveMod in
 }
 
 func handleRemoveWindow(wm *WM) error {
-	frm := wm.findFrame(func(f *frame) bool { return f.client.window == wm.activeWin })
+	frm := wm.findFrame(func(f *frame) bool { return f.cli.Window() == wm.activeWin })
 	if frm == nil {
 		log.Printf("WARNING: handleRemoveWindow: could not find frame with window %d\n", wm.activeWin)
 		return nil
 	}
-	return x11.GracefullyDestroyWindow(frm.client.window)
+	return wm.xc.GracefullyDestroyWindow(frm.cli.Window())
 }
 
 func handleMoveWindow(wm *WM, dir MoveDirection) error {
-	frm := wm.findFrame(func(f *frame) bool { return f.client.window == wm.activeWin })
+	frm := wm.findFrame(func(f *frame) bool { return f.cli.Window() == wm.activeWin })
 	if frm == nil {
 		log.Printf("WARNING: handleMoveWindow: could not find frame with window %d\n", wm.activeWin)
 		return nil
@@ -184,7 +183,7 @@ func handleMoveWindow(wm *WM, dir MoveDirection) error {
 }
 
 func handleResizeWindow(wm *WM, dir ResizeDirection, pct int) error {
-	frm := wm.findFrame(func(f *frame) bool { return f.client.window == wm.activeWin })
+	frm := wm.findFrame(func(f *frame) bool { return f.cli.Window() == wm.activeWin })
 	if frm == nil {
 		log.Printf("WARNING: handleResizeWindow: could not find frame with window %d\n", wm.activeWin)
 		return nil
@@ -203,7 +202,7 @@ func handleSwitchWorkspace(wm *WM, wsID uint8) error {
 }
 
 func handleMoveWindowToWorkspace(wm *WM, wsID uint8) error {
-	frm := wm.findFrame(func(f *frame) bool { return f.client.window == wm.activeWin })
+	frm := wm.findFrame(func(f *frame) bool { return f.cli.Window() == wm.activeWin })
 	if frm == nil {
 		log.Printf("WARNING: handleMoveWindowToWorkspace: could not find frame with window %d\n", wm.activeWin)
 		return nil

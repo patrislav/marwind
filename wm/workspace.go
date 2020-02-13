@@ -1,11 +1,11 @@
 package wm
 
 import (
-	"github.com/patrislav/marwind/x11"
+	"github.com/patrislav/marwind/client"
 )
 
 type workspaceConfig struct {
-	gap uint32
+	gap uint16
 }
 
 type workspace struct {
@@ -34,7 +34,7 @@ func (ws *workspace) addFrame(f *frame) error {
 	}
 	col.addFrame(f, nil)
 	if ws.output.activeWs == ws {
-		return f.doMap()
+		return f.cli.Map()
 	}
 	return nil
 }
@@ -110,45 +110,45 @@ func (ws *workspace) resizeFrame(f *frame, dir ResizeDirection, pct int) error {
 		if len(ws.columns) < 2 {
 			return nil
 		}
-		min := uint32(float32(ws.area().W) * 0.1)
+		min := uint16(float32(ws.area().W) * 0.1)
 		dwFull := int(float32(ws.area().W) * (float32(pct) / 100))
-		if uint32(int(f.col.width)+dwFull) < min {
+		if uint16(int(f.col.width)+dwFull) < min {
 			return nil
 		}
 		dwPart := dwFull/len(ws.columns) - 1
 		dwFinal := 0
 		for _, col := range ws.columns {
 			if col != f.col {
-				next := uint32(int(col.width) - dwPart)
+				next := uint16(int(col.width) - dwPart)
 				if next >= min {
 					col.width = next
 					dwFinal += dwPart
 				}
 			}
 		}
-		f.col.width = uint32(int(f.col.width) + dwFinal)
+		f.col.width = uint16(int(f.col.width) + dwFinal)
 	case ResizeVert:
 		col := f.col
 		if len(col.frames) < 2 {
 			return nil
 		}
-		min := uint32(float32(ws.area().H) * 0.1)
+		min := uint16(float32(ws.area().H) * 0.1)
 		dhFull := int(float32(ws.area().H) * (float32(pct) / 100))
-		if uint32(int(f.height)+dhFull) < min {
+		if uint16(int(f.height)+dhFull) < min {
 			return nil
 		}
 		dhPart := dhFull/len(col.frames) - 1
 		dhFinal := 0
 		for _, other := range col.frames {
 			if f != other {
-				next := uint32(int(other.height) - dhPart)
+				next := uint16(int(other.height) - dhPart)
 				if next >= min {
 					other.height = next
 					dhFinal += dhPart
 				}
 			}
 		}
-		f.height = uint32(int(f.height) + dhFinal)
+		f.height = uint16(int(f.height) + dhFinal)
 	}
 	return nil
 }
@@ -158,7 +158,7 @@ func (ws *workspace) show() error {
 	var err error
 	for _, col := range ws.columns {
 		for _, f := range col.frames {
-			if e := f.doMap(); e != nil {
+			if e := f.cli.Map(); e != nil {
 				err = e
 			}
 		}
@@ -171,7 +171,7 @@ func (ws *workspace) hide() error {
 	var err error
 	for _, col := range ws.columns {
 		for _, f := range col.frames {
-			if e := f.doUnmap(); e != nil {
+			if e := f.cli.Unmap(); e != nil {
 				err = e
 			}
 		}
@@ -184,13 +184,13 @@ func (ws *workspace) hide() error {
 func (ws *workspace) createColumn(start bool) *column {
 	wsWidth := ws.area().W
 	origLen := len(ws.columns)
-	col := &column{ws: ws, width: ws.area().W / uint32(origLen+1)}
+	col := &column{ws: ws, width: ws.area().W / uint16(origLen+1)}
 	if origLen > 0 {
-		col.width = wsWidth / uint32(origLen+1)
+		col.width = wsWidth / uint16(origLen+1)
 		remWidth := float32(wsWidth - col.width)
-		leftWidth := uint32(remWidth)
+		leftWidth := uint16(remWidth)
 		for _, c := range ws.columns {
-			c.width = uint32((float32(c.width) / float32(wsWidth)) * remWidth)
+			c.width = uint16((float32(c.width) / float32(wsWidth)) * remWidth)
 			leftWidth -= c.width
 		}
 		if leftWidth != 0 {
@@ -217,7 +217,7 @@ func (ws *workspace) deleteColumn(col *column) {
 	// origLen = len(ws.columns)
 	ws.columns = append(ws.columns[:i], ws.columns[i+1:]...)
 	for _, c := range ws.columns {
-		c.width = wsWidth / uint32(len(ws.columns))
+		c.width = wsWidth / uint16(len(ws.columns))
 	}
 }
 
@@ -236,13 +236,13 @@ func (ws *workspace) updateTiling() {
 	}
 }
 
-func (ws *workspace) fullArea() x11.Geom { return ws.output.workspaceArea() }
+func (ws *workspace) fullArea() client.Geom { return ws.output.workspaceArea() }
 
-func (ws *workspace) area() x11.Geom {
+func (ws *workspace) area() client.Geom {
 	a := ws.fullArea()
-	return x11.Geom{
-		X: a.X + ws.config.gap,
-		Y: a.Y + ws.config.gap,
+	return client.Geom{
+		X: a.X + int16(ws.config.gap),
+		Y: a.Y + int16(ws.config.gap),
 		W: a.W - ws.config.gap*2,
 		H: a.H - ws.config.gap*2,
 	}

@@ -22,7 +22,7 @@ const (
 )
 
 func (wm *WM) moveWindow(win xproto.Window, dir MoveDirection) error {
-	f := wm.findFrame(func(f *frame) bool { return f.client.window == win })
+	f := wm.findFrame(func(f *frame) bool { return f.cli.Window() == win })
 	if f == nil {
 		return nil
 	}
@@ -108,7 +108,7 @@ func (wm *WM) moveFrameToWorkspace(f *frame, wsID uint8) error {
 	if err := next.addFrame(f); err != nil {
 		return fmt.Errorf("failed to add the frame to the next workspace: %v", err)
 	}
-	if err := f.doUnmap(); err != nil {
+	if err := f.cli.Unmap(); err != nil {
 		return fmt.Errorf("failed to unmap the frame: %v", err)
 	}
 	if err := wm.renderWorkspace(next); err != nil {

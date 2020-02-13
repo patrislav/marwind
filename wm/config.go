@@ -5,8 +5,8 @@ import (
 )
 
 type Config struct {
-	InnerGap uint32 // Gap around each window, in pixels
-	OuterGap uint32 // Additional gap around the entire workspace, in pixels
+	InnerGap uint16 // Gap around each window, in pixels
+	OuterGap uint16 // Additional gap around the entire workspace, in pixels
 
 	Shell string // Name of the program to use for executing commands ("/bin/sh" by default)
 

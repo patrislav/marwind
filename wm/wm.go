@@ -3,6 +3,7 @@ package wm
 import (
 	"fmt"
 	"github.com/BurntSushi/xgb/xproto"
+	"github.com/patrislav/marwind/client"
 	"github.com/patrislav/marwind/keysym"
 	"github.com/patrislav/marwind/x11"
 	"log"
@@ -12,34 +13,36 @@ const maxWorkspaces = 10
 
 // WM is a struct representing the Window Manager
 type WM struct {
-	outputs        []*output
-	keymap         keysym.Keymap
-	actions        []*action
-	config         Config
-	workspaces     [maxWorkspaces]*workspace
-	activeWin      xproto.Window
-	titlebarConfig *titlebarConfig
+	xc           *x11.Connection
+	outputs      []*output
+	keymap       keysym.Keymap
+	actions      []*action
+	config       Config
+	workspaces   [maxWorkspaces]*workspace
+	activeWin    xproto.Window
+	windowConfig *client.Config
 }
 
 // New initializes a WM and creates an X11 connection
 func New(config Config) (*WM, error) {
-	tc := &titlebarConfig{
-		bgColor:     config.BorderColor,
-		height:      config.TitleBarHeight,
-		fontColor:   config.TitleBarFontColorActive,
-		fontSize:    config.TitleBarFontSize,
-		borderWidth: config.BorderWidth,
+	wc := &client.Config{
+		BgColor:        config.BorderColor,
+		TitlebarHeight: config.TitleBarHeight,
+		FontColor:      config.TitleBarFontColorActive,
+		FontSize:       config.TitleBarFontSize,
+		BorderWidth:    config.BorderWidth,
 	}
-	wm := &WM{config: config, titlebarConfig: tc}
-	if err := x11.CreateConnection(); err != nil {
+	xconn, err := x11.Connect()
+	if err != nil {
 		return nil, fmt.Errorf("failed to create WM: %v", err)
 	}
+	wm := &WM{xc: xconn, config: config, windowConfig: wc}
 	return wm, nil
 }
 
 // Init initializes the WM
 func (wm *WM) Init() error {
-	if err := x11.InitConnection(); err != nil {
+	if err := wm.xc.Init(); err != nil {
 		return fmt.Errorf("failed to init WM: %v", err)
 	}
 	if err := wm.becomeWM(); err != nil {
@@ -48,7 +51,7 @@ func (wm *WM) Init() error {
 		}
 		return fmt.Errorf("could not become WM: %v", err)
 	}
-	km, err := keysym.LoadKeyMapping(x11.X)
+	km, err := keysym.LoadKeyMapping(wm.xc.X())
 	if err != nil {
 		return fmt.Errorf("failed to load key mapping: %v", err)
 	}
@@ -58,10 +61,10 @@ func (wm *WM) Init() error {
 		return fmt.Errorf("failed to grab keys: %v", err)
 	}
 
-	o := newOutput(x11.Geom{
+	o := newOutput(wm.xc, client.Geom{
 		X: 0, Y: 0,
-		W: uint32(x11.Screen.WidthInPixels),
-		H: uint32(x11.Screen.HeightInPixels),
+		W: wm.xc.Screen().WidthInPixels,
+		H: wm.xc.Screen().HeightInPixels,
 	})
 	for i := 0; i < maxWorkspaces; i++ {
 		wm.workspaces[i] = newWorkspace(uint8(i), workspaceConfig{gap: wm.config.OuterGap})
@@ -71,7 +74,7 @@ func (wm *WM) Init() error {
 	}
 	wm.outputs = append(wm.outputs, o)
 
-	if err := x11.SetWMName("Marwind"); err != nil {
+	if err := wm.xc.SetWMName("Marwind"); err != nil {
 		return fmt.Errorf("failed to set WM name: %v", err)
 	}
 	if err := wm.manageExistingClients(); err != nil {
@@ -82,8 +85,8 @@ func (wm *WM) Init() error {
 
 // Close cleans up the WM's resources
 func (wm *WM) Close() {
-	if x11.X != nil {
-		x11.X.Close()
+	if wm.xc != nil {
+		wm.xc.Close()
 	}
 }
 
@@ -93,7 +96,7 @@ func (wm *WM) Run() error {
 		return err
 	}
 	for {
-		xev, err := x11.X.WaitForEvent()
+		xev, err := wm.xc.X().WaitForEvent()
 		if err != nil {
 			// TODO: log the error
 			continue
@@ -107,7 +110,7 @@ func (wm *WM) Run() error {
 			}
 
 		case xproto.EnterNotifyEvent:
-			f := wm.findFrame(func(frm *frame) bool { return frm.client.window == e.Event })
+			f := wm.findFrame(func(frm *frame) bool { return frm.cli.Window() == e.Event })
 			if f != nil {
 				if err := wm.setFocus(e.Event, e.Time); err != nil {
 					log.Println("Failed to set focus:", err)
@@ -120,7 +123,7 @@ func (wm *WM) Run() error {
 			}
 
 		case xproto.MapNotifyEvent:
-			f := wm.findFrame(func(frm *frame) bool { return frm.client.window == e.Window })
+			f := wm.findFrame(func(frm *frame) bool { return frm.cli.Window() == e.Window })
 			if f != nil {
 				if err := wm.configureNotify(f); err != nil {
 					log.Printf("Failed to send ConfigureNotify event to %d: %v\n", e.Window, err)
@@ -128,12 +131,12 @@ func (wm *WM) Run() error {
 			}
 
 		case xproto.MapRequestEvent:
-			f := wm.findFrame(func(frm *frame) bool { return frm.client.window == e.Window })
+			f := wm.findFrame(func(frm *frame) bool { return frm.cli.Window() == e.Window })
 			if f != nil {
 				log.Printf("Skipping MapRequest of an already mapped window %d\n", e.Window)
 				continue
 			}
-			if attr, err := xproto.GetWindowAttributes(x11.X, e.Window).Reply(); err != nil || !attr.OverrideRedirect {
+			if attr, err := xproto.GetWindowAttributes(wm.xc.X(), e.Window).Reply(); err != nil || !attr.OverrideRedirect {
 				if err := wm.manageWindow(e.Window); err != nil {
 					log.Println("Failed to manage a window:", err)
 				}
@@ -143,21 +146,21 @@ func (wm *WM) Run() error {
 			}
 
 		case xproto.UnmapNotifyEvent:
-			f := wm.findFrame(func(frm *frame) bool { return frm.client.window == e.Window })
+			f := wm.findFrame(func(frm *frame) bool { return frm.cli.Window() == e.Window })
 			if f != nil {
-				if err := f.onUnmap(); err != nil {
+				if err := f.cli.OnUnmap(); err != nil {
 					log.Println("Failed to unmap frame's parent:", err)
 					continue
 				}
-				switch f.typ {
-				case winTypeNormal:
+				switch f.cli.Type() {
+				case client.TypeNormal:
 					if ws := f.workspace(); ws != nil {
 						ws.updateTiling()
 						if err := wm.renderWorkspace(ws); err != nil {
 							log.Println("Failed to render workspace:", err)
 						}
 					}
-				case winTypeDock:
+				case client.TypeDock:
 					if err := wm.renderOutput(wm.outputs[0]); err != nil {
 						log.Println("Failed to render output:", err)
 					}
@@ -165,9 +168,9 @@ func (wm *WM) Run() error {
 			}
 
 		case xproto.DestroyNotifyEvent:
-			f := wm.findFrame(func(frm *frame) bool { return frm.client.window == e.Window })
+			f := wm.findFrame(func(frm *frame) bool { return frm.cli.Window() == e.Window })
 			if f != nil {
-				if err := f.onDestroy(); err != nil {
+				if err := f.cli.OnDestroy(); err != nil {
 					log.Println("Failed to destroy frame's parent:", err)
 					continue
 				}
@@ -180,14 +183,14 @@ func (wm *WM) Run() error {
 			}
 
 		case xproto.PropertyNotifyEvent:
-			f := wm.findFrame(func(frm *frame) bool { return frm.client.window == e.Window })
+			f := wm.findFrame(func(frm *frame) bool { return frm.cli.Window() == e.Window })
 			if f != nil {
-				f.onProperty(e.Atom)
+				f.cli.OnProperty(e.Atom)
 			}
 
 		case xproto.ClientMessageEvent:
 			switch e.Type {
-			case x11.Atom("_NET_CURRENT_DESKTOP"):
+			case wm.xc.Atom("_NET_CURRENT_DESKTOP"):
 				out := wm.outputs[0]
 				index := int(e.Data.Data32[0])
 				if index < len(out.workspaces) {
@@ -199,9 +202,11 @@ func (wm *WM) Run() error {
 			}
 
 		case xproto.ExposeEvent:
-			f := wm.findFrame(func(frm *frame) bool { return frm.parent == e.Window })
-			if f != nil && f.titlebar != nil {
-				f.titlebar.draw()
+			f := wm.findFrame(func(frm *frame) bool {
+				return frm.cli.Parent() == e.Window || frm.cli.Window() == e.Window
+			})
+			if f != nil {
+				f.cli.Draw()
 			}
 		}
 	}
@@ -219,7 +224,7 @@ func (wm *WM) becomeWM() error {
 			xproto.EventMaskStructureNotify |
 			xproto.EventMaskSubstructureRedirect,
 	}
-	return xproto.ChangeWindowAttributesChecked(x11.X, x11.Screen.Root, xproto.CwEventMask, evtMask).Check()
+	return xproto.ChangeWindowAttributesChecked(wm.xc.X(), wm.xc.GetRootWindow(), xproto.CwEventMask, evtMask).Check()
 }
 
 // grabKeys attempts to get a sole ownership of certain key combinations
@@ -227,9 +232,9 @@ func (wm *WM) grabKeys() error {
 	for _, action := range wm.actions {
 		for _, code := range action.codes {
 			cookie := xproto.GrabKeyChecked(
-				x11.X,
+				wm.xc.X(),
 				false,
-				x11.Screen.Root,
+				wm.xc.GetRootWindow(),
 				uint16(action.modifiers),
 				code,
 				xproto.GrabModeAsync,
@@ -297,14 +302,14 @@ func (wm *WM) updateDesktopHints() error {
 		names[i] = fmt.Sprintf("%d", ws.id+1)
 		for _, col := range ws.columns {
 			for _, f := range col.frames {
-				wsWins[i] = append(wsWins[i], f.client.window)
+				wsWins[i] = append(wsWins[i], f.cli.Window())
 			}
 		}
 		if ws == out.activeWs {
 			current = i
 			for area := range out.dockAreas {
 				for _, f := range out.dockAreas[area] {
-					wsWins[i] = append(wsWins[i], f.client.window)
+					wsWins[i] = append(wsWins[i], f.cli.Window())
 				}
 			}
 		}
@@ -315,13 +320,13 @@ func (wm *WM) updateDesktopHints() error {
 			windows = append(windows, win)
 		}
 	}
-	if err := x11.SetDesktopHints(names, current, windows); err != nil {
+	if err := wm.xc.SetDesktopHints(names, current, windows); err != nil {
 		return err
 	}
 	var err error
 	for i, wins := range wsWins {
 		for _, win := range wins {
-			if e := x11.SetWindowDesktop(win, i); e != nil {
+			if e := wm.xc.SetWindowDesktop(win, i); e != nil {
 				err = e
 			}
 		}
@@ -330,7 +335,7 @@ func (wm *WM) updateDesktopHints() error {
 }
 
 func (wm *WM) handleConfigureRequest(e xproto.ConfigureRequestEvent) error {
-	f := wm.findFrame(func(frm *frame) bool { return frm.client.window == e.Window })
+	f := wm.findFrame(func(frm *frame) bool { return frm.cli.Window() == e.Window })
 	if f != nil {
 		if err := wm.configureNotify(f); err != nil {
 			return fmt.Errorf("failed to send ConfigureNotify event to %d: %v", e.Window, err)
@@ -348,17 +353,17 @@ func (wm *WM) handleConfigureRequest(e xproto.ConfigureRequestEvent) error {
 		BorderWidth:      0,
 		OverrideRedirect: false,
 	}
-	xproto.SendEventChecked(x11.X, false, e.Window, xproto.EventMaskStructureNotify, string(ev.Bytes()))
+	xproto.SendEventChecked(wm.xc.X(), false, e.Window, xproto.EventMaskStructureNotify, string(ev.Bytes()))
 	return nil
 }
 
 func (wm *WM) manageExistingClients() error {
-	tree, err := xproto.QueryTree(x11.X, x11.Screen.Root).Reply()
+	tree, err := xproto.QueryTree(wm.xc.X(), wm.xc.GetRootWindow()).Reply()
 	if err != nil {
 		return err
 	}
 	for _, win := range tree.Children {
-		attrs, err := xproto.GetWindowAttributes(x11.X, win).Reply()
+		attrs, err := xproto.GetWindowAttributes(wm.xc.X(), win).Reply()
 		if err != nil {
 			continue
 		}

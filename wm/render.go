@@ -2,7 +2,8 @@ package wm
 
 import (
 	"github.com/BurntSushi/xgb/xproto"
-	"github.com/patrislav/marwind/x11"
+	"github.com/patrislav/marwind/client"
+	"log"
 )
 
 func (wm *WM) renderOutput(o *output) error {
@@ -21,22 +22,22 @@ func (wm *WM) renderOutput(o *output) error {
 
 func (wm *WM) renderDock(o *output, area dockArea) error {
 	var err error
-	var y uint32
+	var y int16
 	switch area {
 	case dockAreaTop:
 		y = o.geom.Y
 	case dockAreaBottom:
-		y = o.geom.H - o.dockHeight(area)
+		y = int16(o.geom.H - o.dockHeight(area))
 	}
 	for _, f := range o.dockAreas[area] {
-		geom := x11.Geom{
+		geom := client.Geom{
 			X: o.geom.X,
 			Y: y,
 			W: o.geom.W,
 			H: f.height,
 		}
 		err = wm.renderFrame(f, geom)
-		y += geom.H
+		y += int16(geom.H)
 	}
 	return err
 }
@@ -44,12 +45,13 @@ func (wm *WM) renderDock(o *output, area dockArea) error {
 func (wm *WM) renderWorkspace(ws *workspace) error {
 	var err error
 	if f := ws.singleFrame(); f != nil {
+		log.Println("single frame on a workspace", f, ws.fullArea())
 		return wm.renderFrame(f, ws.fullArea())
 	}
 	a := ws.area()
 	x := a.X
 	for _, col := range ws.columns {
-		geom := x11.Geom{
+		geom := client.Geom{
 			X: x,
 			Y: a.Y,
 			W: col.width,
@@ -58,46 +60,46 @@ func (wm *WM) renderWorkspace(ws *workspace) error {
 		if e := wm.renderColumn(col, geom); e != nil {
 			err = e
 		}
-		x += col.width
+		x += int16(col.width)
 	}
 	return err
 }
 
-func (wm *WM) renderColumn(col *column, geom x11.Geom) error {
+func (wm *WM) renderColumn(col *column, geom client.Geom) error {
 	var err error
 	y := geom.Y
 	gap := wm.config.InnerGap
 	for _, f := range col.frames {
-		fg := x11.Geom{
-			X: geom.X + gap,
-			Y: y + gap,
+		fg := client.Geom{
+			X: geom.X + int16(gap),
+			Y: y + int16(gap),
 			W: geom.W - gap*2,
 			H: f.height - gap*2,
 		}
 		if e := wm.renderFrame(f, fg); e != nil {
 			err = e
 		}
-		y += f.height
+		y += int16(f.height)
 	}
 	return err
 }
 
-func (wm *WM) renderFrame(f *frame, geom x11.Geom) error {
-	if !f.mapped {
+func (wm *WM) renderFrame(f *frame, geom client.Geom) error {
+	if !f.cli.Mapped() {
 		return nil
 	}
-	f.geom = geom
+	f.cli.SetGeom(geom)
 	mask := uint16(xproto.ConfigWindowX | xproto.ConfigWindowY | xproto.ConfigWindowWidth | xproto.ConfigWindowHeight)
-	parentVals := []uint32{geom.X, geom.Y, geom.W, geom.H}
+	parentVals := []uint32{uint32(geom.X), uint32(geom.Y), uint32(geom.W), uint32(geom.H)}
 	clientVals := parentVals
-	if f.parent != 0 {
-		if err := xproto.ConfigureWindowChecked(x11.X, f.parent, mask, parentVals).Check(); err != nil {
+	if f.cli.Parent() != 0 {
+		if err := xproto.ConfigureWindowChecked(wm.xc.X(), f.cli.Parent(), mask, parentVals).Check(); err != nil {
 			return err
 		}
 		d := wm.getFrameDecorations(f)
-		clientVals = []uint32{d.Left, d.Top, geom.W - d.Left - d.Right, geom.H - d.Top - d.Bottom}
+		clientVals = []uint32{d.Left, d.Top, uint32(geom.W) - d.Left - d.Right, uint32(geom.H) - d.Top - d.Bottom}
 	}
-	if err := xproto.ConfigureWindowChecked(x11.X, f.client.window, mask, clientVals).Check(); err != nil {
+	if err := xproto.ConfigureWindowChecked(wm.xc.X(), f.cli.Window(), mask, clientVals).Check(); err != nil {
 		return err
 	}
 	if err := wm.configureNotify(f); err != nil {
@@ -110,28 +112,28 @@ func (wm *WM) configureNotify(f *frame) error {
 	// Hack for Java applications as described here:
 	// https://stackoverflow.com/questions/31646544/xlib-reparenting-a-java-window-with-popups-properly-translated
 	// TODO: when window decorations are added, this should change to include them
-	geom := f.geom
-	if f.parent != 0 {
+	geom := f.cli.Geom()
+	if f.cli.Parent() != 0 {
 		d := wm.getFrameDecorations(f)
-		geom = x11.Geom{
-			X: f.geom.X + d.Left,
-			Y: f.geom.Y + d.Top,
-			W: f.geom.W - d.Left - d.Right,
-			H: f.geom.H - d.Top - d.Bottom,
+		geom = client.Geom{
+			X: geom.X + int16(d.Left),
+			Y: geom.Y + int16(d.Top),
+			W: geom.W - uint16(d.Left-d.Right),
+			H: geom.H - uint16(d.Top-d.Bottom),
 		}
 	}
 	ev := xproto.ConfigureNotifyEvent{
-		Event:            f.client.window,
-		Window:           f.client.window,
-		X:                int16(geom.X),
-		Y:                int16(geom.Y),
-		Width:            uint16(geom.W),
-		Height:           uint16(geom.H),
+		Event:            f.cli.Window(),
+		Window:           f.cli.Window(),
+		X:                geom.X,
+		Y:                geom.Y,
+		Width:            geom.W,
+		Height:           geom.H,
 		BorderWidth:      0,
 		AboveSibling:     0,
 		OverrideRedirect: true,
 	}
-	evCookie := xproto.SendEventChecked(x11.X, false, f.client.window, xproto.EventMaskStructureNotify, string(ev.Bytes()))
+	evCookie := xproto.SendEventChecked(wm.xc.X(), false, f.cli.Window(), xproto.EventMaskStructureNotify, string(ev.Bytes()))
 	if err := evCookie.Check(); err != nil {
 		return err
 	}

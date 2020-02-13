@@ -1,7 +1,7 @@
 package x11
 
 import (
-"github.com/BurntSushi/xgb/xproto"
+	"github.com/BurntSushi/xgb/xproto"
 )
 
 const (
@@ -57,4 +57,13 @@ func (xc *Connection) createCursor(cursor uint16) (xproto.Cursor, error) {
 	}
 
 	return cursorId, nil
+}
+
+// WarpPointer moves the pointer to an x, y point on the screen
+func (xc *Connection) WarpPointer(x, y int16) error {
+	return xproto.WarpPointerChecked(
+		xc.conn, xproto.WindowNone, xc.screen.Root,
+		0, 0, 0, 0,
+		x, y,
+	).Check()
 }
