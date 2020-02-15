@@ -84,11 +84,20 @@ func (wm *WM) switchWorkspace(id uint8) error {
 	if err := ws.output.switchWorkspace(ws); err != nil {
 		return fmt.Errorf("output unable to switch workpace: %v", err)
 	}
+	if err := wm.updateDesktopHints(); err != nil {
+		return fmt.Errorf("failed to update desktop hints: %v", err)
+	}
 	if err := wm.removeFocus(); err != nil {
 		return fmt.Errorf("failed to remove focus: %v", err)
 	}
-	if err := wm.updateDesktopHints(); err != nil {
-		return fmt.Errorf("failed to update desktop hints: %v", err)
+
+	// TODO: temporary solution! Focuses always the first window of the first column
+	// Better approach: implement a window focus stack for each workspace, on switch focus the top-of-stack window
+	if len(ws.columns) > 0 && len(ws.columns[0].frames) > 0 {
+		win := ws.columns[0].frames[0].cli.Window()
+		if err := wm.setFocus(win, xproto.TimeCurrentTime); err != nil {
+			return fmt.Errorf("failed to set focus: %w", err)
+		}
 	}
 	return nil
 }
