@@ -98,10 +98,9 @@ func (wm *WM) Run() error {
 	for {
 		xev, err := wm.xc.X().WaitForEvent()
 		if err != nil {
-			// TODO: log the error
+			log.Println(err)
 			continue
 		}
-		log.Println(xev)
 		switch e := xev.(type) {
 		// TODO: handle all the events
 		case xproto.KeyPressEvent:

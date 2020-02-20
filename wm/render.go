@@ -3,7 +3,6 @@ package wm
 import (
 	"github.com/BurntSushi/xgb/xproto"
 	"github.com/patrislav/marwind/client"
-	"log"
 )
 
 func (wm *WM) renderOutput(o *output) error {
@@ -45,7 +44,6 @@ func (wm *WM) renderDock(o *output, area dockArea) error {
 func (wm *WM) renderWorkspace(ws *workspace) error {
 	var err error
 	if f := ws.singleFrame(); f != nil {
-		log.Println("single frame on a workspace", f, ws.fullArea())
 		return wm.renderFrame(f, ws.fullArea())
 	}
 	a := ws.area()
