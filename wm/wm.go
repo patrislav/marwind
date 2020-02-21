@@ -151,19 +151,6 @@ func (wm *WM) Run() error {
 					log.Println("Failed to unmap frame's parent:", err)
 					continue
 				}
-				switch f.cli.Type() {
-				case client.TypeNormal:
-					if ws := f.workspace(); ws != nil {
-						ws.updateTiling()
-						if err := wm.renderWorkspace(ws); err != nil {
-							log.Println("Failed to render workspace:", err)
-						}
-					}
-				case client.TypeDock:
-					if err := wm.renderOutput(wm.outputs[0]); err != nil {
-						log.Println("Failed to render output:", err)
-					}
-				}
 			}
 
 		case xproto.DestroyNotifyEvent:

@@ -84,6 +84,9 @@ func (wm *WM) switchWorkspace(id uint8) error {
 	if err := ws.output.switchWorkspace(ws); err != nil {
 		return fmt.Errorf("output unable to switch workpace: %v", err)
 	}
+	if err := wm.renderWorkspace(ws); err != nil {
+		return fmt.Errorf("wm.renderWorkspace: %w", err)
+	}
 	if err := wm.updateDesktopHints(); err != nil {
 		return fmt.Errorf("failed to update desktop hints: %v", err)
 	}
