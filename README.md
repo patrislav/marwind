@@ -37,7 +37,3 @@ The compiled binaries will be located in the `bin` directory. The window manager
 ```bash
 ./bin/marwm
 ```
-
-## Licence
-
-Copyright 2019 Patryk Kalinowski. All rights reserved.
