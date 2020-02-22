@@ -212,7 +212,7 @@ func (ws *workspace) deleteColumn(col *column) {
 	if i < 0 {
 		return
 	}
-	wsWidth := ws.output.workspaceArea().W
+	wsWidth := ws.area().W
 	// TODO: assign the widths proportional to the original width/totalWidth ratio
 	// origLen = len(ws.columns)
 	ws.columns = append(ws.columns[:i], ws.columns[i+1:]...)
