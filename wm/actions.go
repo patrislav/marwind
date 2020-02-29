@@ -21,14 +21,14 @@ func initActions(wm *WM) []*action {
 	shift := xproto.ModMaskShift
 	actions := []*action{
 		{
-			sym:       keysym.XK_q,
+			sym:       keysym.XKq,
 			modifiers: mod | shift,
 			act: func() error {
 				return handleRemoveWindow(wm)
 			},
 		},
 		{
-			sym:       keysym.XK_t,
+			sym:       keysym.XKt,
 			modifiers: mod | shift | xproto.ModMask1,
 			act: func() error {
 				os.Exit(1)
@@ -36,7 +36,7 @@ func initActions(wm *WM) []*action {
 			},
 		},
 		{
-			sym:       keysym.XK_d,
+			sym:       keysym.XKd,
 			modifiers: mod,
 			act: func() error {
 				cmd := exec.Command(wm.config.Shell, "-c", wm.config.LauncherCommand)
@@ -49,7 +49,7 @@ func initActions(wm *WM) []*action {
 			},
 		},
 		{
-			sym:       keysym.XK_Return,
+			sym:       keysym.XKReturn,
 			modifiers: mod | shift,
 			act: func() error {
 				cmd := exec.Command(wm.config.Shell, "-c", wm.config.TerminalCommand)
@@ -62,42 +62,42 @@ func initActions(wm *WM) []*action {
 			},
 		},
 		{
-			sym:       keysym.XK_h,
+			sym:       keysym.XKh,
 			modifiers: mod | shift,
 			act:       func() error { return handleMoveWindow(wm, MoveLeft) },
 		},
 		{
-			sym:       keysym.XK_j,
+			sym:       keysym.XKj,
 			modifiers: mod | shift,
 			act:       func() error { return handleMoveWindow(wm, MoveDown) },
 		},
 		{
-			sym:       keysym.XK_k,
+			sym:       keysym.XKk,
 			modifiers: mod | shift,
 			act:       func() error { return handleMoveWindow(wm, MoveUp) },
 		},
 		{
-			sym:       keysym.XK_l,
+			sym:       keysym.XKl,
 			modifiers: mod | shift,
 			act:       func() error { return handleMoveWindow(wm, MoveRight) },
 		},
 		{
-			sym:       keysym.XK_y,
+			sym:       keysym.XKy,
 			modifiers: mod | shift,
 			act:       func() error { return handleResizeWindow(wm, ResizeHoriz, -5) },
 		},
 		{
-			sym:       keysym.XK_u,
+			sym:       keysym.XKu,
 			modifiers: mod | shift,
 			act:       func() error { return handleResizeWindow(wm, ResizeVert, 5) },
 		},
 		{
-			sym:       keysym.XK_i,
+			sym:       keysym.XKi,
 			modifiers: mod | shift,
 			act:       func() error { return handleResizeWindow(wm, ResizeVert, -5) },
 		},
 		{
-			sym:       keysym.XK_o,
+			sym:       keysym.XKo,
 			modifiers: mod | shift,
 			act:       func() error { return handleResizeWindow(wm, ResizeHoriz, 5) },
 		},
@@ -136,9 +136,9 @@ func appendWorkspaceActions(wm *WM, actions []*action, switchMod int, moveMod in
 	for i := 0; i < maxWorkspaces; i++ {
 		var sym xproto.Keysym
 		if i == 9 {
-			sym = keysym.XK_0
+			sym = keysym.XK0
 		} else {
-			sym = xproto.Keysym(keysym.XK_1 + i)
+			sym = xproto.Keysym(keysym.XK1 + i)
 		}
 		wsID := i
 		actions = append(actions, &action{

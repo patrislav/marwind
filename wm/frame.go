@@ -31,7 +31,7 @@ func (f *frame) workspace() *workspace {
 
 func (wm *WM) getFrameDecorations(f *frame) x11.Dimensions {
 	if f.cli.Parent() == 0 {
-		return x11.Dimensions{0, 0, 0, 0}
+		return x11.Dimensions{Top: 0, Left: 0, Right: 0, Bottom: 0}
 	}
 	var bar uint32
 	border := uint32(wm.config.BorderWidth)

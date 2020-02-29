@@ -27,23 +27,23 @@ func (xc *Connection) initDesktop() error {
 }
 
 func (xc *Connection) createCursor(cursor uint16) (xproto.Cursor, error) {
-	fontId, err := xproto.NewFontId(xc.conn)
+	fontID, err := xproto.NewFontId(xc.conn)
 	if err != nil {
 		return 0, err
 	}
 
-	cursorId, err := xproto.NewCursorId(xc.conn)
+	cursorID, err := xproto.NewCursorId(xc.conn)
 	if err != nil {
 		return 0, err
 	}
 
-	err = xproto.OpenFontChecked(xc.conn, fontId,
+	err = xproto.OpenFontChecked(xc.conn, fontID,
 		uint16(len("cursor")), "cursor").Check()
 	if err != nil {
 		return 0, err
 	}
 
-	err = xproto.CreateGlyphCursorChecked(xc.conn, cursorId, fontId, fontId,
+	err = xproto.CreateGlyphCursorChecked(xc.conn, cursorID, fontID, fontID,
 		cursor, cursor+1,
 		0, 0, 0,
 		0xffff, 0xffff, 0xffff).Check()
@@ -51,12 +51,12 @@ func (xc *Connection) createCursor(cursor uint16) (xproto.Cursor, error) {
 		return 0, err
 	}
 
-	err = xproto.CloseFontChecked(xc.conn, fontId).Check()
+	err = xproto.CloseFontChecked(xc.conn, fontID).Check()
 	if err != nil {
 		return 0, err
 	}
 
-	return cursorId, nil
+	return cursorID, nil
 }
 
 // WarpPointer moves the pointer to an x, y point on the screen
