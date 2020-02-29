@@ -193,7 +193,9 @@ func (wm *WM) Run() error {
 				return frm.cli.Parent() == e.Window || frm.cli.Window() == e.Window
 			})
 			if f != nil {
-				f.cli.Draw()
+				if err := f.cli.Draw(); err != nil {
+					log.Println("Failed to draw client:", err)
+				}
 			}
 		}
 	}
@@ -303,9 +305,7 @@ func (wm *WM) updateDesktopHints() error {
 	}
 	windows := make([]xproto.Window, 0)
 	for _, wins := range wsWins {
-		for _, win := range wins {
-			windows = append(windows, win)
-		}
+		windows = append(windows, wins...)
 	}
 	if err := wm.xc.SetDesktopHints(names, current, windows); err != nil {
 		return err

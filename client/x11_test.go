@@ -16,9 +16,9 @@ type mockReparented struct {
 type mockX11 struct {
 	t *testing.T
 
-	mappedWins     []xproto.Window
-	unmappedWins   []xproto.Window
-	destroyedWins  []xproto.Window
+	// mappedWins     []xproto.Window
+	// unmappedWins   []xproto.Window
+	// destroyedWins  []xproto.Window
 	reparentedWins []mockReparented
 }
 

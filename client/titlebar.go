@@ -60,7 +60,7 @@ func (c *Client) drawTitlebar() error {
 	x := int(width/2) - w/2
 	y := int(c.cfg.TitlebarHeight/2) - h/2
 	dstRect := image.Rect(x, y, x+w, y+h)
-	draw.Draw(img, dstRect, text, image.ZP, draw.Src)
+	draw.Draw(img, dstRect, text, image.Point{}, draw.Src)
 
 	if err := img.CreatePixmap(); err != nil {
 		return err

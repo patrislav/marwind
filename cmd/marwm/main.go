@@ -49,7 +49,9 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
-		go cmd.Wait()
+		go func() {
+			_ = cmd.Wait()
+		}()
 	}
 
 	if err := mgr.Run(); err != nil {

@@ -2,6 +2,7 @@ package client
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/BurntSushi/xgb/xproto"
 )
@@ -149,6 +150,8 @@ func (c *Client) reparent(parent xproto.Window) error {
 func (c *Client) updateTitleProperty() {
 	if v, err := c.x11.GetWindowTitle(c.window); err == nil {
 		c.title = v
-		c.drawTitlebar()
+		if err := c.drawTitlebar(); err != nil {
+			log.Printf("Failed to draw titlebar of client %v: %v\n", c.window, err)
+		}
 	}
 }
