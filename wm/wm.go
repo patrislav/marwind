@@ -2,11 +2,12 @@ package wm
 
 import (
 	"fmt"
+	"log"
+
 	"github.com/BurntSushi/xgb/xproto"
 	"github.com/patrislav/marwind/client"
 	"github.com/patrislav/marwind/keysym"
 	"github.com/patrislav/marwind/x11"
-	"log"
 )
 
 const maxWorkspaces = 10

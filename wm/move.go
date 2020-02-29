@@ -2,6 +2,7 @@ package wm
 
 import (
 	"fmt"
+
 	"github.com/BurntSushi/xgb/xproto"
 )
 

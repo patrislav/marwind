@@ -1,8 +1,9 @@
 package x11
 
 import (
-	"github.com/BurntSushi/xgbutil/xgraphics"
 	"image"
+
+	"github.com/BurntSushi/xgbutil/xgraphics"
 )
 
 type Dimensions struct {

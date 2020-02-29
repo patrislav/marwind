@@ -23,7 +23,7 @@ var Config = wm.Config{
 		keysym.XF86MonBrightnessDown: "light -U 5",
 		keysym.XF86MonBrightnessUp:   "light -A 5",
 		// Volume control
-		keysym.XF86AudioMute: "pactl set-sink-mute @DEFAULT_SINK@ toggle",
+		keysym.XF86AudioMute:        "pactl set-sink-mute @DEFAULT_SINK@ toggle",
 		keysym.XF86AudioLowerVolume: "pactl set-sink-volume @DEFAULT_SINK@ -5%",
 		keysym.XF86AudioRaiseVolume: "pactl set-sink-volume @DEFAULT_SINK@ +5%",
 	},

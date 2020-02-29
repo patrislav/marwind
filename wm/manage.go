@@ -2,9 +2,10 @@ package wm
 
 import (
 	"fmt"
-	"github.com/patrislav/marwind/client"
 
 	"github.com/BurntSushi/xgb/xproto"
+
+	"github.com/patrislav/marwind/client"
 )
 
 func (wm *WM) manageWindow(win xproto.Window) error {

@@ -1,10 +1,11 @@
 package client
 
 import (
-	"github.com/BurntSushi/xgb/xproto"
-	"github.com/BurntSushi/xgbutil/xgraphics"
 	"image"
 	"testing"
+
+	"github.com/BurntSushi/xgb/xproto"
+	"github.com/BurntSushi/xgbutil/xgraphics"
 )
 
 type mockReparented struct {

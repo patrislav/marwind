@@ -1,8 +1,9 @@
 package x11
 
 import (
-	"github.com/BurntSushi/xgb/xproto"
 	"log"
+
+	"github.com/BurntSushi/xgb/xproto"
 )
 
 // Atom returns the X11 atom of the given name

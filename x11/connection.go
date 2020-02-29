@@ -3,6 +3,7 @@ package x11
 import (
 	"errors"
 	"fmt"
+
 	"github.com/BurntSushi/xgb"
 	"github.com/BurntSushi/xgb/xproto"
 	"github.com/BurntSushi/xgbutil"

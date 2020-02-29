@@ -1,9 +1,10 @@
 package client
 
 import (
+	"image"
+
 	"github.com/BurntSushi/xgb/xproto"
 	"github.com/BurntSushi/xgbutil/xgraphics"
-	"image"
 )
 
 type x11 interface {

@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"github.com/patrislav/marwind"
 	"log"
 	"os"
 	"os/exec"
@@ -10,6 +9,7 @@ import (
 
 	flag "github.com/spf13/pflag"
 
+	"github.com/patrislav/marwind"
 	"github.com/patrislav/marwind/wm"
 )
 

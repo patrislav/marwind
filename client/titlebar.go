@@ -1,12 +1,13 @@
 package client
 
 import (
-	"github.com/BurntSushi/freetype-go/freetype"
-	"github.com/BurntSushi/xgbutil/xgraphics"
-	"golang.org/x/image/font/gofont/goregular"
 	"image"
 	"image/color"
 	"image/draw"
+
+	"github.com/BurntSushi/freetype-go/freetype"
+	"github.com/BurntSushi/xgbutil/xgraphics"
+	"golang.org/x/image/font/gofont/goregular"
 )
 
 func (c *Client) drawTitlebar() error {

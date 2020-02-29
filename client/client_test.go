@@ -1,9 +1,10 @@
 package client
 
 import (
-	"github.com/BurntSushi/xgb/xproto"
 	"reflect"
 	"testing"
+
+	"github.com/BurntSushi/xgb/xproto"
 )
 
 func TestNew(t *testing.T) {

@@ -2,8 +2,9 @@ package wm
 
 import (
 	"fmt"
-	"github.com/patrislav/marwind/client"
 	"sort"
+
+	"github.com/patrislav/marwind/client"
 
 	"github.com/patrislav/marwind/x11"
 )
